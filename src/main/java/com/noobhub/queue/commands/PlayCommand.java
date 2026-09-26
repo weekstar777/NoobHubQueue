@@ -62,17 +62,8 @@ public class PlayCommand implements CommandExecutor {
             enterGame(player);
 
         } else {
-            // 不在队列中，说明是前100名，再次检查游戏区域是否有空位
-            int gamePlayersCount = getGamePlayers();
-            int maxPlayers = plugin.getConfigManager().getMaxGamePlayers();
-
-            if (gamePlayersCount >= maxPlayers) {
-                MessageUtil.send(player, "§c游戏区域已满，请稍候");
-                MessageUtil.send(player, "  §8▸ §7当前游戏人数: §e" + gamePlayersCount + "§7/§e" + maxPlayers);
-                return true;
-            }
-
-            // 有空位，进入游戏
+            // 不在队列中，说明是前100名（进服时已占名额）
+            // 直接传送，无需再检查名额
             enterGame(player);
         }
 
@@ -114,25 +105,6 @@ public class PlayCommand implements CommandExecutor {
         }
 
         MessageUtil.send(player, "§a欢迎来到游戏！");
-    }
-
-    /**
-     * 获取当前在游戏区域的玩家数（不包括等待大厅的）
-     */
-    private int getGamePlayers() {
-        int totalOnline = Bukkit.getOnlinePlayers().size();
-        int queueSize = plugin.getQueueManager().getQueueSize();
-        int guestNotInQueue = 0;
-
-        // 统计在等待大厅但未排队的玩家数
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            if (plugin.getQueueManager().isGuestMode(p.getUniqueId())
-                && !plugin.getQueueManager().isInQueue(p.getUniqueId())) {
-                guestNotInQueue++;
-            }
-        }
-
-        return totalOnline - queueSize - guestNotInQueue;
     }
 }
 

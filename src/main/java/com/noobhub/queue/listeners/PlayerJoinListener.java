@@ -45,21 +45,22 @@ public class PlayerJoinListener implements Listener {
             // 标记为访客模式
             plugin.getQueueManager().setGuestMode(player.getUniqueId(), true);
 
-            // 4. 检查游戏区域人数，决定是否需要排队
-            int gamePlayersCount = getGamePlayers();
+            // 4. 检查已占用名额，决定是否需要排队
+            // 已占用名额 = 当前在线人数（包括自己）- 排队人数
+            int occupiedSlots = Bukkit.getOnlinePlayers().size() - plugin.getQueueManager().getQueueSize();
             int maxPlayers = plugin.getConfigManager().getMaxGamePlayers();
 
-            plugin.getLogger().info(player.getName() + " 加入服务器，当前游戏人数: " + gamePlayersCount + "/" + maxPlayers);
+            plugin.getLogger().info(player.getName() + " 加入服务器，当前占用名额: " + occupiedSlots + "/" + maxPlayers);
 
-            if (gamePlayersCount < maxPlayers) {
-                // 还有空位，可以随时 /play
+            if (occupiedSlots <= maxPlayers) {
+                // 有空位，玩家占用一个名额，可以随时 /play 传送
                 MessageUtil.send(player, "§a§l欢迎来到 NoobHub！");
-                MessageUtil.send(player, "§7游戏区域还有空位 §8| §e输入 §6/play §e即可进入游戏");
-                plugin.getLogger().info(player.getName() + " 可以随时进入游戏（有空位）");
+                MessageUtil.send(player, "§7输入 §6/play §7即可进入游戏");
+                plugin.getLogger().info(player.getName() + " 占用名额 " + occupiedSlots + "/" + maxPlayers + "，可随时传送");
             } else {
-                // 已满，加入排队系统
+                // 已满100人，加入排队系统等待空位
                 plugin.getQueueManager().addToQueue(player);
-                plugin.getLogger().info(player.getName() + " 加入排队系统（游戏区域已满）");
+                plugin.getLogger().info(player.getName() + " 加入排队系统（名额已满）");
             }
 
         }, 1L);

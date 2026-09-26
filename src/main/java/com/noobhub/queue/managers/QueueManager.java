@@ -283,19 +283,15 @@ public class QueueManager {
         }
     }
 
+    /**
+     * 获取当前已占用的游戏区名额
+     * 计算方式：在线总人数 - 排队人数
+     *
+     * 前100名玩家虽然在等待大厅，但已占用名额
+     * 排队玩家未占用名额，需等待空位
+     */
     private int getGamePlayers() {
-        int totalOnline = Bukkit.getOnlinePlayers().size();
-        int queueSize = getQueueSize();
-        int guestNotInQueue = 0;
-
-        // 统计在等待大厅但未排队的玩家数
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            if (isGuestMode(p.getUniqueId()) && !isInQueue(p.getUniqueId())) {
-                guestNotInQueue++;
-            }
-        }
-
-        return totalOnline - queueSize - guestNotInQueue;
+        return Bukkit.getOnlinePlayers().size() - getQueueSize();
     }
 
     private void updateQueueDisplay() {
