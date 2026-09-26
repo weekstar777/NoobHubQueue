@@ -34,6 +34,9 @@ public class QueueManager {
     // 记录已经通知过"轮到你了"的玩家，避免重复通知
     private final Set<UUID> notifiedPlayers;
 
+    // 记录处于访客模式的玩家（在等待大厅）
+    private final Set<UUID> guestModePlayers;
+
     private BukkitTask checkTask;
     private LuckPerms luckPerms;
 
@@ -44,6 +47,7 @@ public class QueueManager {
         this.joinTime = new ConcurrentHashMap<>();
         this.targetLocations = new ConcurrentHashMap<>();
         this.notifiedPlayers = ConcurrentHashMap.newKeySet();
+        this.guestModePlayers = ConcurrentHashMap.newKeySet();
 
         // 尝试获取LuckPerms
         try {
@@ -181,6 +185,31 @@ public class QueueManager {
         return vipQueue.contains(uuid);
     }
 
+    /**
+     * 设置玩家的访客模式状态
+     */
+    public void setGuestMode(UUID uuid, boolean enabled) {
+        if (enabled) {
+            guestModePlayers.add(uuid);
+        } else {
+            guestModePlayers.remove(uuid);
+        }
+    }
+
+    /**
+     * 检查玩家是否处于访客模式
+     */
+    public boolean isGuestMode(UUID uuid) {
+        return guestModePlayers.contains(uuid);
+    }
+
+    /**
+     * 检查玩家是否已被通知（轮到你了）
+     */
+    public boolean isNotified(UUID uuid) {
+        return notifiedPlayers.contains(uuid);
+    }
+
     private boolean isVIP(Player player) {
         if (luckPerms == null) {
             return player.hasPermission("queue.vip");
@@ -255,7 +284,18 @@ public class QueueManager {
     }
 
     private int getGamePlayers() {
-        return Bukkit.getOnlinePlayers().size() - getQueueSize();
+        int totalOnline = Bukkit.getOnlinePlayers().size();
+        int queueSize = getQueueSize();
+        int guestNotInQueue = 0;
+
+        // 统计在等待大厅但未排队的玩家数
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (isGuestMode(p.getUniqueId()) && !isInQueue(p.getUniqueId())) {
+                guestNotInQueue++;
+            }
+        }
+
+        return totalOnline - queueSize - guestNotInQueue;
     }
 
     private void updateQueueDisplay() {

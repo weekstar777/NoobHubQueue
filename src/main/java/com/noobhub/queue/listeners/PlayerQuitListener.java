@@ -15,8 +15,17 @@ public class PlayerQuitListener implements Listener {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
+        java.util.UUID uuid = event.getPlayer().getUniqueId();
+
         // 从队列中移除
-        plugin.getQueueManager().removeFromQueue(event.getPlayer().getUniqueId());
-        plugin.getLogger().info(event.getPlayer().getName() + " 退出服务器并从队列移除");
+        plugin.getQueueManager().removeFromQueue(uuid);
+
+        // 清除访客模式标记
+        plugin.getQueueManager().setGuestMode(uuid, false);
+
+        // 清除目标位置记录
+        plugin.getQueueManager().removeTargetLocation(uuid);
+
+        plugin.getLogger().info(event.getPlayer().getName() + " 退出服务器，清理所有状态");
     }
 }

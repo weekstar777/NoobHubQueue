@@ -1,6 +1,8 @@
 package com.noobhub.queue.commands;
 
 import com.noobhub.queue.NoobHubQueue;
+import com.noobhub.queue.utils.MessageUtil;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -29,52 +31,69 @@ public class PlayCommand implements CommandExecutor {
         Player player = (Player) sender;
         UUID uuid = player.getUniqueId();
 
-        // 如果玩家在队列中
-        if (plugin.getQueueManager().isInQueue(uuid)) {
-            // 检查是否轮到了
-            UUID nextPlayer = plugin.getQueueManager().getNextPlayer();
-            int gamePlayers = getGamePlayers();
-            int maxPlayers = plugin.getConfigManager().getMaxGamePlayers();
+        // 检查是否在等待大厅（访客模式）
+        if (!plugin.getQueueManager().isGuestMode(uuid)) {
+            MessageUtil.send(player, "§c你不在等待大厅！");
+            return true;
+        }
 
-            if (uuid.equals(nextPlayer) && gamePlayers < maxPlayers) {
-                // 轮到了！处理进入游戏
-                handlePlayCommand(player);
-            } else {
+        // 检查是否在队列中
+        if (plugin.getQueueManager().isInQueue(uuid)) {
+            // 在队列中，检查是否轮到
+            if (!plugin.getQueueManager().isNotified(uuid)) {
                 // 还没轮到
                 boolean isVip = plugin.getQueueManager().isInVipQueue(uuid);
                 String channel = isVip ? "§6[VIP通道]" : "§7[普通通道]";
                 int position = plugin.getQueueManager().getPosition(uuid);
 
-                player.sendMessage(channel + " §c还没轮到你！");
-                player.sendMessage("  §8▸ §7你的位置: §e第 " + position + " 位");
+                MessageUtil.send(player, channel + " §c还没轮到你！");
+                MessageUtil.send(player, "  §8▸ §7你的位置: §e第 " + position + " 位");
 
                 if (!isVip) {
                     int vipAhead = plugin.getQueueManager().getVipQueueSize();
                     if (vipAhead > 0) {
-                        player.sendMessage("  §8▸ §7VIP通道前方: §e" + vipAhead + " §7人");
+                        MessageUtil.send(player, "  §8▸ §7VIP通道前方: §e" + vipAhead + " §7人");
                     }
                 }
+                return true;
             }
+
+            // 轮到了，处理进入游戏
+            enterGame(player);
+
         } else {
-            // 不在队列中
-            player.sendMessage("§e你已经在游戏中了！");
+            // 不在队列中，说明是前100名，再次检查游戏区域是否有空位
+            int gamePlayersCount = getGamePlayers();
+            int maxPlayers = plugin.getConfigManager().getMaxGamePlayers();
+
+            if (gamePlayersCount >= maxPlayers) {
+                MessageUtil.send(player, "§c游戏区域已满，请稍候");
+                MessageUtil.send(player, "  §8▸ §7当前游戏人数: §e" + gamePlayersCount + "§7/§e" + maxPlayers);
+                return true;
+            }
+
+            // 有空位，进入游戏
+            enterGame(player);
         }
 
         return true;
     }
 
     /**
-     * 处理 /play 指令 - 玩家进入游戏
+     * 处理玩家进入游戏
      */
-    private void handlePlayCommand(Player player) {
+    private void enterGame(Player player) {
         UUID uuid = player.getUniqueId();
-        boolean isVip = plugin.getQueueManager().isInVipQueue(uuid);
-        String channel = isVip ? "§6[VIP通道]" : "§7[普通通道]";
 
-        // 从队列移除
-        plugin.getQueueManager().removeFromQueue(uuid);
+        // 从队列移除（如果在队列中）
+        if (plugin.getQueueManager().isInQueue(uuid)) {
+            plugin.getQueueManager().removeFromQueue(uuid);
+        }
 
-        player.sendMessage(channel + " §a正在进入游戏...");
+        // 取消访客模式
+        plugin.getQueueManager().setGuestMode(uuid, false);
+
+        MessageUtil.send(player, "§a§l正在进入游戏...");
 
         // 获取目标位置
         Location targetLocation = plugin.getQueueManager().getTargetLocation(uuid);
@@ -82,9 +101,8 @@ public class PlayCommand implements CommandExecutor {
         if (targetLocation != null) {
             // 传送到记录的位置
             player.teleport(targetLocation);
-            plugin.getLogger().info((isVip ? "[VIP]" : "[普通]") + " " + player.getName() +
-                " 执行/play进入游戏，传送到: " + String.format("%.1f, %.1f, %.1f",
-                targetLocation.getX(), targetLocation.getY(), targetLocation.getZ()));
+            plugin.getLogger().info(player.getName() + " 执行/play进入游戏，传送到: " +
+                String.format("%.1f, %.1f, %.1f", targetLocation.getX(), targetLocation.getY(), targetLocation.getZ()));
 
             // 移除位置记录
             plugin.getQueueManager().removeTargetLocation(uuid);
@@ -95,16 +113,27 @@ public class PlayCommand implements CommandExecutor {
             plugin.getLogger().warning(player.getName() + " 没有记录的目标位置，传送到世界出生点");
         }
 
-        // 恢复玩家状态
-        player.setFoodLevel(20);
-        player.setSaturation(20);
-        player.setHealth(player.getMaxHealth());
+        MessageUtil.send(player, "§a欢迎来到游戏！");
     }
 
     /**
-     * 获取当前在游戏中的玩家数（不包括排队的）
+     * 获取当前在游戏区域的玩家数（不包括等待大厅的）
      */
     private int getGamePlayers() {
-        return plugin.getServer().getOnlinePlayers().size() - plugin.getQueueManager().getQueueSize();
+        int totalOnline = Bukkit.getOnlinePlayers().size();
+        int queueSize = plugin.getQueueManager().getQueueSize();
+        int guestNotInQueue = 0;
+
+        // 统计在等待大厅但未排队的玩家数
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (plugin.getQueueManager().isGuestMode(p.getUniqueId())
+                && !plugin.getQueueManager().isInQueue(p.getUniqueId())) {
+                guestNotInQueue++;
+            }
+        }
+
+        return totalOnline - queueSize - guestNotInQueue;
     }
 }
+
+

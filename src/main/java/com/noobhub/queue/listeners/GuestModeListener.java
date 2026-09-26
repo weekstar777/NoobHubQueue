@@ -28,10 +28,10 @@ public class GuestModeListener implements Listener {
     }
 
     /**
-     * 检查玩家是否在访客模式（在排队中）
+     * 检查玩家是否在访客模式（在等待大厅）
      */
     private boolean isGuest(Player player) {
-        return plugin.getQueueManager().isInQueue(player.getUniqueId());
+        return plugin.getQueueManager().isGuestMode(player.getUniqueId());
     }
 
     /**
