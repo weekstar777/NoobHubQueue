@@ -1,0 +1,43 @@
+# NoobHubQueue Configuration File
+
+settings:
+  # 游戏区域最大人数
+  max-game-players: 100
+
+  # 等待平台位置
+  lobby-location:
+    world: world
+    x: 10.5
+    y: 197.0
+    z: -9.5
+    yaw: 0.0
+    pitch: 0.0
+
+  # 检查间隔（tick，20 tick = 1秒）
+  check-interval: 20
+
+permissions:
+  # VIP权限节点
+  vip: "queue.vip"
+
+messages:
+  # 加入排队
+  join-queue: "&7你已加入排队 &8| &e位置: &6{position}&e/&6{total}"
+
+  # VIP插队
+  vip-priority: "&6[VIP] &e你已插队至第 &6{position} &e位"
+
+  # 轮到你了
+  your-turn: "&a&l轮到你了！&r&7输入 &e/play &7进入游戏，或等待自动传送..."
+
+  # 排队更新（ActionBar显示）
+  queue-update: "&7排队中... &e{position}&7/&e{total} &8| &7前方: &e{ahead} &7人"
+
+  # 不在队列中
+  not-in-queue: "&c你不在排队队列中！"
+
+  # 还没轮到
+  not-your-turn: "&c还没轮到你！&7你的位置: &e{position} &8| &7前方还有 &e{ahead} &7人"
+
+  # 不是队列第一位
+  not-first: "&c还没轮到你！&7请等待前面的玩家先进入。你的位置: &e{position}"

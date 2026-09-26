@@ -1,0 +1,22 @@
+name: NoobHubQueue
+version: ${project.version}
+main: com.noobhub.queue.NoobHubQueue
+api-version: '1.21'
+author: NoobHub
+description: Single server queue system
+website: https://github.com/noobhub
+
+softdepend: [LuckPerms, RandomSpawn, Essentials]
+
+commands:
+  play:
+    description: Enter the game when your turn comes
+    usage: /<command>
+
+permissions:
+  queue.vip:
+    description: VIP priority in queue
+    default: false
+  queue.admin:
+    description: Admin commands
+    default: op
