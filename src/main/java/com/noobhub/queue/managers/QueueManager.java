@@ -210,6 +210,13 @@ public class QueueManager {
         return notifiedPlayers.contains(uuid);
     }
 
+    /**
+     * 清除玩家的通知标记
+     */
+    public void clearNotification(UUID uuid) {
+        notifiedPlayers.remove(uuid);
+    }
+
     private boolean isVIP(Player player) {
         if (luckPerms == null) {
             return player.hasPermission("queue.vip");
@@ -266,9 +273,12 @@ public class QueueManager {
                         Duration.ofMillis(500)
                     )));
 
-                // 标记为已通知
+                // 立即从队列移除，占用游戏区名额
+                removeFromQueue(nextUuid);
+
+                // 标记为已通知（等待传送）
                 notifiedPlayers.add(nextUuid);
-                plugin.getLogger().info((isFromVip ? "[VIP]" : "[普通]") + " " + nextPlayer.getName() + " 轮到了，等待输入/play");
+                plugin.getLogger().info((isFromVip ? "[VIP]" : "[普通]") + " " + nextPlayer.getName() + " 轮到了，已占用名额，等待传送");
             }
 
             // 更新所有排队玩家的显示

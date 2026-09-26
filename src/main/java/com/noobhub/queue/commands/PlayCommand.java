@@ -39,33 +39,25 @@ public class PlayCommand implements CommandExecutor {
 
         // 检查是否在队列中
         if (plugin.getQueueManager().isInQueue(uuid)) {
-            // 在队列中，检查是否轮到
-            if (!plugin.getQueueManager().isNotified(uuid)) {
-                // 还没轮到
-                boolean isVip = plugin.getQueueManager().isInVipQueue(uuid);
-                String channel = isVip ? "§6[VIP通道]" : "§7[普通通道]";
-                int position = plugin.getQueueManager().getPosition(uuid);
+            // 还在队列中，说明还没轮到
+            boolean isVip = plugin.getQueueManager().isInVipQueue(uuid);
+            String channel = isVip ? "§6[VIP通道]" : "§7[普通通道]";
+            int position = plugin.getQueueManager().getPosition(uuid);
 
-                MessageUtil.send(player, channel + " §c还没轮到你！");
-                MessageUtil.send(player, "  §8▸ §7你的位置: §e第 " + position + " 位");
+            MessageUtil.send(player, channel + " §c还没轮到你！");
+            MessageUtil.send(player, "  §8▸ §7你的位置: §e第 " + position + " 位");
 
-                if (!isVip) {
-                    int vipAhead = plugin.getQueueManager().getVipQueueSize();
-                    if (vipAhead > 0) {
-                        MessageUtil.send(player, "  §8▸ §7VIP通道前方: §e" + vipAhead + " §7人");
-                    }
+            if (!isVip) {
+                int vipAhead = plugin.getQueueManager().getVipQueueSize();
+                if (vipAhead > 0) {
+                    MessageUtil.send(player, "  §8▸ §7VIP通道前方: §e" + vipAhead + " §7人");
                 }
-                return true;
             }
-
-            // 轮到了，处理进入游戏
-            enterGame(player);
-
-        } else {
-            // 不在队列中，说明是前100名（进服时已占名额）
-            // 直接传送，无需再检查名额
-            enterGame(player);
+            return true;
         }
+
+        // 不在队列中（前100名或已被通知），直接传送
+        enterGame(player);
 
         return true;
     }
@@ -76,10 +68,8 @@ public class PlayCommand implements CommandExecutor {
     private void enterGame(Player player) {
         UUID uuid = player.getUniqueId();
 
-        // 从队列移除（如果在队列中）
-        if (plugin.getQueueManager().isInQueue(uuid)) {
-            plugin.getQueueManager().removeFromQueue(uuid);
-        }
+        // 清除通知标记（如果有）
+        plugin.getQueueManager().clearNotification(uuid);
 
         // 取消访客模式
         plugin.getQueueManager().setGuestMode(uuid, false);

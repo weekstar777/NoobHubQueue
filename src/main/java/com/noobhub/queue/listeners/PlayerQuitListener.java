@@ -20,6 +20,9 @@ public class PlayerQuitListener implements Listener {
         // 从队列中移除
         plugin.getQueueManager().removeFromQueue(uuid);
 
+        // 清除通知标记
+        plugin.getQueueManager().clearNotification(uuid);
+
         // 清除访客模式标记
         plugin.getQueueManager().setGuestMode(uuid, false);
 
