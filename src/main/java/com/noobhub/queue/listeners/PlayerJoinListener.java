@@ -33,11 +33,11 @@ public class PlayerJoinListener implements Listener {
             Location currentLocation = player.getLocation().clone();
             Location lobbyLocation = plugin.getConfigManager().getLobbyLocation();
 
-            // 判断当前位置是否在等待平台附近（5格范围内）
+            // 判断当前位置是否在等待平台附近（20格范围内）
             boolean isInLobby = currentLocation.getWorld().equals(lobbyLocation.getWorld())
-                && Math.abs(currentLocation.getX() - lobbyLocation.getX()) < 5
-                && Math.abs(currentLocation.getY() - lobbyLocation.getY()) < 5
-                && Math.abs(currentLocation.getZ() - lobbyLocation.getZ()) < 5;
+                && Math.abs(currentLocation.getX() - lobbyLocation.getX()) < 20
+                && Math.abs(currentLocation.getY() - lobbyLocation.getY()) < 20
+                && Math.abs(currentLocation.getZ() - lobbyLocation.getZ()) < 20;
 
             if (!isInLobby) {
                 // 不在等待平台，记录这个位置（游戏区位置）

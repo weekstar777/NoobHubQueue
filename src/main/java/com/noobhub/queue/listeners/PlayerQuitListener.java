@@ -26,12 +26,13 @@ public class PlayerQuitListener implements Listener {
         // 清除访客模式标记
         plugin.getQueueManager().setGuestMode(uuid, false);
 
-        // 清除目标位置记录
-        plugin.getQueueManager().removeTargetLocation(uuid);
+        // 不清除目标位置记录 - 保留给下次进服使用
+        // 这样玩家在等待平台退出后，重新进服时仍能使用上次的游戏区位置
+        // plugin.getQueueManager().removeTargetLocation(uuid);
 
         // 清除保存的物品数据
         plugin.getQueueManager().clearSavedInventory(uuid);
 
-        plugin.getLogger().info(event.getPlayer().getName() + " 退出服务器，清理所有状态");
+        plugin.getLogger().info(event.getPlayer().getName() + " 退出服务器，清理状态（保留位置记录）");
     }
 }
