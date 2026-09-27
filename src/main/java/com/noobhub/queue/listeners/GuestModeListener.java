@@ -86,21 +86,15 @@ public class GuestModeListener implements Listener {
     }
 
     /**
-     * 阻止访客攻击实体（除了空手）
-     * 空A是允许的
+     * 阻止访客攻击实体（包括空手）
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         if (event.getDamager() instanceof Player) {
             Player player = (Player) event.getDamager();
             if (isGuest(player)) {
-                // 检查是否是空手
-                if (player.getInventory().getItemInMainHand().getType().isAir()) {
-                    // 允许空A
-                } else {
-                    // 有物品时不允许攻击
-                    event.setCancelled(true);
-                }
+                // 完全禁止攻击（包括空手）
+                event.setCancelled(true);
             }
         }
     }
