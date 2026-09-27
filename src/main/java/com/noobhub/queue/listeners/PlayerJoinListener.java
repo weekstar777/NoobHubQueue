@@ -40,22 +40,20 @@ public class PlayerJoinListener implements Listener {
                 && Math.abs(currentLocation.getZ() - lobbyLocation.getZ()) < 20;
 
             if (!isInLobby) {
-                // 不在等待平台，记录这个位置（游戏区位置）
+                // 不在等待平台，记录游戏区位置并保存物品
                 plugin.getQueueManager().recordTargetLocation(player.getUniqueId(), currentLocation);
-                plugin.getLogger().info("记录 " + player.getName() + " 的游戏区位置: " +
+                plugin.getQueueManager().saveInventory(player);
+                plugin.getLogger().info("记录 " + player.getName() + " 的游戏区位置和物品: " +
                     String.format("%.1f, %.1f, %.1f", currentLocation.getX(), currentLocation.getY(), currentLocation.getZ()));
             } else {
-                // 在等待平台，不更新位置（保留之前的记录，或使用默认位置）
-                plugin.getLogger().info(player.getName() + " 在等待平台退出，使用之前记录的位置");
+                // 在等待平台，不更新位置和物品（保留之前的游戏区数据）
+                plugin.getLogger().info(player.getName() + " 在等待平台退出，保留之前的位置和物品数据");
             }
 
             // 2. 传送到等待大厅
             TeleportUtil.teleportToLobby(player, plugin);
 
-            // 3. 保存玩家物品和装备
-            plugin.getQueueManager().saveInventory(player);
-
-            // 4. 设置访客模式（清空物品栏）
+            // 3. 设置访客模式（清空物品栏）
             setGuestMode(player);
 
             // 标记为访客模式
