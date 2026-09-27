@@ -5,7 +5,6 @@ import com.noobhub.queue.config.ConfigManager;
 import com.noobhub.queue.listeners.GuestModeListener;
 import com.noobhub.queue.listeners.PlayerJoinListener;
 import com.noobhub.queue.listeners.PlayerQuitListener;
-import com.noobhub.queue.listeners.PlayerTeleportListener;
 import com.noobhub.queue.managers.QueueManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -29,7 +28,6 @@ public final class NoobHubQueue extends JavaPlugin {
         // 注册监听器
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerQuitListener(this), this);
-        getServer().getPluginManager().registerEvents(new PlayerTeleportListener(this), this);
         getServer().getPluginManager().registerEvents(new GuestModeListener(this), this);
 
         // 注册指令

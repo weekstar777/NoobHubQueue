@@ -91,20 +91,61 @@ public class PlayCommand implements CommandExecutor {
             // 移除位置记录
             plugin.getQueueManager().removeTargetLocation(uuid);
         } else {
-            // 没有记录位置（可能是新玩家或在等待平台退出的玩家）
-            // 使用RandomSpawn的逻辑：先传送到当前世界的随机位置，让RandomSpawn处理
-            plugin.getLogger().info(player.getName() + " 没有记录位置，将由RandomSpawn分配新位置");
+            // 没有记录位置（新玩家首次/play）
+            // 生成随机出生位置
+            plugin.getLogger().info(player.getName() + " 没有记录位置，生成随机出生点");
 
-            // 传送到主世界出生点，然后让RandomSpawn重新处理
-            Location spawn = plugin.getServer().getWorld("world").getSpawnLocation();
-            player.teleport(spawn);
+            Location randomLocation = generateRandomSpawnLocation(player.getWorld());
+            player.teleport(randomLocation);
 
-            // 立即触发RandomSpawn（如果有的话）
-            // RandomSpawn会在玩家传送后自动处理
+            plugin.getLogger().info(player.getName() + " 首次进入游戏，传送到随机位置: " +
+                String.format("%.1f, %.1f, %.1f", randomLocation.getX(), randomLocation.getY(), randomLocation.getZ()));
         }
 
         MessageUtil.send(player, "§a欢迎来到游戏！");
     }
+
+    /**
+     * 生成随机出生位置（模拟RandomSpawn的逻辑）
+     */
+    private Location generateRandomSpawnLocation(org.bukkit.World world) {
+        java.util.Random random = new java.util.Random();
+        int maxTries = 50;
+
+        for (int i = 0; i < maxTries; i++) {
+            // 在 -1000 到 1000 范围内随机选择 X 和 Z
+            int x = random.nextInt(2000) - 1000;
+            int z = random.nextInt(2000) - 1000;
+
+            // 获取该位置的最高方块（地表）
+            int y = world.getHighestBlockYAt(x, z);
+
+            Location location = new Location(world, x + 0.5, y, z + 0.5);
+
+            // 检查是否是安全位置（不在危险方块上）
+            if (isSafeLocation(location)) {
+                return location;
+            }
+        }
+
+        // 如果找不到安全位置，返回世界出生点
+        return world.getSpawnLocation();
+    }
+
+    /**
+     * 检查位置是否安全
+     */
+    private boolean isSafeLocation(Location location) {
+        org.bukkit.Material blockType = location.getBlock().getType();
+
+        // 危险方块列表
+        return blockType != org.bukkit.Material.LAVA
+            && blockType != org.bukkit.Material.FIRE
+            && blockType != org.bukkit.Material.CACTUS
+            && blockType != org.bukkit.Material.MAGMA_BLOCK
+            && blockType != org.bukkit.Material.CAMPFIRE
+            && blockType != org.bukkit.Material.SOUL_CAMPFIRE
+            && blockType != org.bukkit.Material.WITHER_ROSE
+            && blockType != org.bukkit.Material.SWEET_BERRY_BUSH;
+    }
 }
-
-
