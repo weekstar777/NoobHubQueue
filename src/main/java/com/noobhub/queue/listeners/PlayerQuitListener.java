@@ -29,6 +29,9 @@ public class PlayerQuitListener implements Listener {
         // 清除目标位置记录
         plugin.getQueueManager().removeTargetLocation(uuid);
 
+        // 清除保存的物品数据
+        plugin.getQueueManager().clearSavedInventory(uuid);
+
         plugin.getLogger().info(event.getPlayer().getName() + " 退出服务器，清理所有状态");
     }
 }

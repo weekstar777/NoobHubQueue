@@ -76,6 +76,9 @@ public class PlayCommand implements CommandExecutor {
 
         MessageUtil.send(player, "§a§l正在进入游戏...");
 
+        // 恢复玩家物品和装备
+        plugin.getQueueManager().restoreInventory(player);
+
         // 获取目标位置
         Location targetLocation = plugin.getQueueManager().getTargetLocation(uuid);
 

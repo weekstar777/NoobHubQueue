@@ -39,13 +39,16 @@ public class PlayerJoinListener implements Listener {
             // 2. 传送到等待大厅
             TeleportUtil.teleportToLobby(player, plugin);
 
-            // 3. 设置访客模式
+            // 3. 保存玩家物品和装备
+            plugin.getQueueManager().saveInventory(player);
+
+            // 4. 设置访客模式（清空物品栏）
             setGuestMode(player);
 
             // 标记为访客模式
             plugin.getQueueManager().setGuestMode(player.getUniqueId(), true);
 
-            // 4. 检查已占用名额，决定是否需要排队
+            // 5. 检查已占用名额，决定是否需要排队
             // 已占用名额 = 当前在线人数（包括自己）- 排队人数
             int occupiedSlots = Bukkit.getOnlinePlayers().size() - plugin.getQueueManager().getQueueSize();
             int maxPlayers = plugin.getConfigManager().getMaxGamePlayers();
