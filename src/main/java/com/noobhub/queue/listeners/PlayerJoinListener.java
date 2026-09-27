@@ -4,7 +4,6 @@ import com.noobhub.queue.NoobHubQueue;
 import com.noobhub.queue.utils.MessageUtil;
 import com.noobhub.queue.utils.TeleportUtil;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -23,66 +22,18 @@ public class PlayerJoinListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
-        // 判断是否是新玩家
-        boolean isNewPlayer = !player.hasPlayedBefore();
+        // 所有玩家统一处理：立即传送到主城
+        // 位置和物品的记录在退出时已完成，不需要在进服时处理
 
-        if (isNewPlayer) {
-            // 新玩家：立即传送到等待平台，不延迟
-            plugin.getLogger().info(player.getName() + " 是新玩家，立即传送到等待平台");
+        plugin.getLogger().info(player.getName() + " 进入服务器，立即传送到主城");
 
-            // 立即传送（防止看到游戏区）
-            TeleportUtil.teleportToLobby(player, plugin);
-
-            // 设置访客模式
-            setGuestMode(player);
-            plugin.getQueueManager().setGuestMode(player.getUniqueId(), true);
-
-            // 检查名额分配
-            handleQueueAssignment(player);
-
-        } else {
-            // 老玩家：延迟1 tick，等待Paper恢复位置
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                if (!player.isOnline()) return;
-
-                handleOldPlayerJoin(player);
-
-            }, 1L);
-        }
-    }
-
-    /**
-     * 处理老玩家进服
-     */
-    private void handleOldPlayerJoin(Player player) {
-        // 1. 检查并记录玩家位置（仅记录游戏区位置）
-        Location currentLocation = player.getLocation().clone();
-        Location lobbyLocation = plugin.getConfigManager().getLobbyLocation();
-
-        // 判断当前位置是否在等待平台附近（20格范围内）
-        boolean isInLobby = currentLocation.getWorld().equals(lobbyLocation.getWorld())
-            && Math.abs(currentLocation.getX() - lobbyLocation.getX()) < 20
-            && Math.abs(currentLocation.getY() - lobbyLocation.getY()) < 20
-            && Math.abs(currentLocation.getZ() - lobbyLocation.getZ()) < 20;
-
-        if (!isInLobby) {
-            // 不在等待平台，记录游戏区位置并保存物品
-            plugin.getQueueManager().recordTargetLocation(player.getUniqueId(), currentLocation);
-            plugin.getQueueManager().saveInventory(player);
-            plugin.getLogger().info("记录 " + player.getName() + " 的游戏区位置和物品: " +
-                String.format("%.1f, %.1f, %.1f", currentLocation.getX(), currentLocation.getY(), currentLocation.getZ()));
-        } else {
-            // 在等待平台，不更新位置和物品（保留之前的游戏区数据）
-            plugin.getLogger().info(player.getName() + " 在等待平台退出，保留之前的位置和物品数据");
-        }
-
-        // 2. 传送到等待大厅
+        // 1. 立即传送到主城
         TeleportUtil.teleportToLobby(player, plugin);
 
-        // 3. 设置访客模式（清空物品栏）
+        // 2. 设置访客模式
         setGuestMode(player);
 
-        // 标记为访客模式
+        // 3. 标记为访客模式
         plugin.getQueueManager().setGuestMode(player.getUniqueId(), true);
 
         // 4. 检查名额分配
@@ -132,5 +83,3 @@ public class PlayerJoinListener implements Listener {
         plugin.getLogger().info(player.getName() + " 已设置为访客模式");
     }
 }
-
-

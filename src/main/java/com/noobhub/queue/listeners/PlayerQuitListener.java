@@ -1,6 +1,8 @@
 package com.noobhub.queue.listeners;
 
 import com.noobhub.queue.NoobHubQueue;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -15,8 +17,31 @@ public class PlayerQuitListener implements Listener {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        java.util.UUID uuid = event.getPlayer().getUniqueId();
+        Player player = event.getPlayer();
+        java.util.UUID uuid = player.getUniqueId();
 
+        // 1. 记录玩家位置和物品（仅在游戏区时记录）
+        Location currentLocation = player.getLocation();
+        Location lobbyLocation = plugin.getConfigManager().getLobbyLocation();
+
+        // 判断是否在主城（20格范围内）
+        boolean isInLobby = currentLocation.getWorld().equals(lobbyLocation.getWorld())
+            && Math.abs(currentLocation.getX() - lobbyLocation.getX()) < 20
+            && Math.abs(currentLocation.getY() - lobbyLocation.getY()) < 20
+            && Math.abs(currentLocation.getZ() - lobbyLocation.getZ()) < 20;
+
+        if (!isInLobby) {
+            // 在游戏区退出，记录位置和物品
+            plugin.getQueueManager().recordTargetLocation(uuid, currentLocation);
+            plugin.getQueueManager().saveInventory(player);
+            plugin.getLogger().info("记录 " + player.getName() + " 的退出位置和物品: " +
+                String.format("%.1f, %.1f, %.1f", currentLocation.getX(), currentLocation.getY(), currentLocation.getZ()));
+        } else {
+            // 在主城退出，不更新记录（保留上次游戏区的数据）
+            plugin.getLogger().info(player.getName() + " 在主城退出，保留游戏区数据");
+        }
+
+        // 2. 清理临时状态
         // 从队列中移除
         plugin.getQueueManager().removeFromQueue(uuid);
 
@@ -26,14 +51,8 @@ public class PlayerQuitListener implements Listener {
         // 清除访客模式标记
         plugin.getQueueManager().setGuestMode(uuid, false);
 
-        // 不清除目标位置记录 - 保留给下次进服使用
-        // 这样玩家在等待平台退出后，重新进服时仍能使用上次的游戏区位置
-        // plugin.getQueueManager().removeTargetLocation(uuid);
+        // 注意：不清除 targetLocation 和 savedInventories（已在上面处理）
 
-        // 不清除保存的物品数据 - 保留给下次进服使用
-        // 这样玩家在等待平台退出后，重新进服时仍能恢复游戏区的物品
-        // plugin.getQueueManager().clearSavedInventory(uuid);
-
-        plugin.getLogger().info(event.getPlayer().getName() + " 退出服务器，清理状态（保留位置和物品记录）");
+        plugin.getLogger().info(event.getPlayer().getName() + " 退出服务器");
     }
 }
