@@ -44,6 +44,9 @@ public class QueueManager {
     // 保存玩家的装备内容
     private final Map<UUID, ItemStack[]> savedArmor;
 
+    // 保存玩家的出生点（第一次随机传送的位置）
+    private final Map<UUID, Location> playerSpawnPoints;
+
     private BukkitTask checkTask;
     private LuckPerms luckPerms;
 
@@ -57,6 +60,7 @@ public class QueueManager {
         this.guestModePlayers = ConcurrentHashMap.newKeySet();
         this.savedInventories = new ConcurrentHashMap<>();
         this.savedArmor = new ConcurrentHashMap<>();
+        this.playerSpawnPoints = new ConcurrentHashMap<>();
 
         // 尝试获取LuckPerms
         try {
@@ -377,5 +381,21 @@ public class QueueManager {
             }
             normalIndex++;
         }
+    }
+
+    /**
+     * 设置玩家的出生点（第一次随机传送的位置）
+     */
+    public void setPlayerSpawnPoint(UUID uuid, Location location) {
+        playerSpawnPoints.put(uuid, location);
+        plugin.getLogger().info("设置玩家 " + uuid + " 的出生点: " +
+            String.format("%.1f, %.1f, %.1f", location.getX(), location.getY(), location.getZ()));
+    }
+
+    /**
+     * 获取玩家的出生点
+     */
+    public Location getPlayerSpawnPoint(UUID uuid) {
+        return playerSpawnPoints.get(uuid);
     }
 }

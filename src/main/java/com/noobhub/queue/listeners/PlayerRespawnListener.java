@@ -50,17 +50,31 @@ public class PlayerRespawnListener implements Listener {
             return;
         }
 
-        // 没有床/重生锚，使用随机位置重生
-        plugin.getLogger().info(player.getName() + " 死亡重生，生成随机位置");
+        // 没有床/重生锚，使用玩家的出生点（第一次随机传送的位置）
+        Location spawnPoint = plugin.getQueueManager().getPlayerSpawnPoint(player.getUniqueId());
 
-        World world = player.getWorld();
-        Location randomLocation = findSafeRandomLocation(world);
+        if (spawnPoint != null) {
+            // 有保存的出生点，使用它
+            event.setRespawnLocation(spawnPoint);
+            plugin.getLogger().info(player.getName() + " 在出生点重生: " +
+                String.format("%.1f, %.1f, %.1f",
+                    spawnPoint.getX(), spawnPoint.getY(), spawnPoint.getZ()));
+        } else {
+            // 没有出生点（理论上不应该发生），生成新的随机位置
+            plugin.getLogger().warning(player.getName() + " 没有出生点记录，生成新的随机位置");
 
-        event.setRespawnLocation(randomLocation);
+            World world = player.getWorld();
+            Location randomLocation = findSafeRandomLocation(world);
 
-        plugin.getLogger().info(player.getName() + " 随机重生到: " +
-            String.format("%.1f, %.1f, %.1f",
-                randomLocation.getX(), randomLocation.getY(), randomLocation.getZ()));
+            event.setRespawnLocation(randomLocation);
+
+            // 保存为出生点
+            plugin.getQueueManager().setPlayerSpawnPoint(player.getUniqueId(), randomLocation);
+
+            plugin.getLogger().info(player.getName() + " 随机重生到: " +
+                String.format("%.1f, %.1f, %.1f",
+                    randomLocation.getX(), randomLocation.getY(), randomLocation.getZ()));
+        }
     }
 
     /**

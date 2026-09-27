@@ -131,6 +131,9 @@ public class PlayCommand implements CommandExecutor {
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     player.teleport(randomLocation);
 
+                    // 保存为玩家的出生点（用于死亡重生）
+                    plugin.getQueueManager().setPlayerSpawnPoint(uuid, randomLocation);
+
                     plugin.getLogger().info(player.getName() + " 首次进入游戏，传送到随机位置: " +
                         String.format("%.1f, %.1f, %.1f (耗时: %dms)",
                             randomLocation.getX(), randomLocation.getY(), randomLocation.getZ(), duration));
