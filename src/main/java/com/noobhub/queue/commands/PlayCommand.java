@@ -4,17 +4,39 @@ import com.noobhub.queue.NoobHubQueue;
 import com.noobhub.queue.utils.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Biome;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 public class PlayCommand implements CommandExecutor {
 
     private final NoobHubQueue plugin;
+    private final Random random = new Random();
+
+    // 生物群系黑名单（借鉴FastRTP）
+    private static final Set<Biome> BLACKLISTED_BIOMES = Set.of(
+        Biome.OCEAN,
+        Biome.DEEP_OCEAN,
+        Biome.COLD_OCEAN,
+        Biome.WARM_OCEAN,
+        Biome.LUKEWARM_OCEAN,
+        Biome.FROZEN_OCEAN,
+        Biome.DEEP_COLD_OCEAN,
+        Biome.DEEP_LUKEWARM_OCEAN,
+        Biome.DEEP_FROZEN_OCEAN,
+        Biome.RIVER,
+        Biome.FROZEN_RIVER,
+        Biome.THE_VOID
+    );
 
     public PlayCommand(NoobHubQueue plugin) {
         this.plugin = plugin;
@@ -90,62 +112,129 @@ public class PlayCommand implements CommandExecutor {
 
             // 移除位置记录
             plugin.getQueueManager().removeTargetLocation(uuid);
+
+            MessageUtil.send(player, "§a欢迎来到游戏！");
         } else {
             // 没有记录位置（新玩家首次/play）
-            // 生成随机出生位置
-            plugin.getLogger().info(player.getName() + " 没有记录位置，生成随机出生点");
+            // 使用异步随机传送（借鉴FastRTP）
+            plugin.getLogger().info(player.getName() + " 没有记录位置，异步生成随机出生点");
 
-            Location randomLocation = generateRandomSpawnLocation(player.getWorld());
-            player.teleport(randomLocation);
+            MessageUtil.send(player, "§e正在寻找安全位置...");
 
-            plugin.getLogger().info(player.getName() + " 首次进入游戏，传送到随机位置: " +
-                String.format("%.1f, %.1f, %.1f", randomLocation.getX(), randomLocation.getY(), randomLocation.getZ()));
+            // 异步执行，避免卡服
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                long startTime = System.currentTimeMillis();
+                Location randomLocation = findSafeRandomLocation(player.getWorld());
+                long duration = System.currentTimeMillis() - startTime;
+
+                // 回到主线程传送玩家
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    player.teleport(randomLocation);
+
+                    plugin.getLogger().info(player.getName() + " 首次进入游戏，传送到随机位置: " +
+                        String.format("%.1f, %.1f, %.1f (耗时: %dms)",
+                            randomLocation.getX(), randomLocation.getY(), randomLocation.getZ(), duration));
+
+                    MessageUtil.send(player, "§a欢迎来到游戏！");
+                    MessageUtil.send(player, "§7§o找到安全位置耗时: " + duration + "ms");
+                });
+            });
         }
-
-        MessageUtil.send(player, "§a欢迎来到游戏！");
     }
 
     /**
-     * 生成随机出生位置（模拟RandomSpawn的逻辑）
+     * 寻找安全的随机位置（借鉴FastRTP的核心算法）
      */
-    private Location generateRandomSpawnLocation(org.bukkit.World world) {
-        java.util.Random random = new java.util.Random();
+    private Location findSafeRandomLocation(World world) {
         int maxTries = 50;
+        int minRadius = 500;   // 最小半径
+        int maxRadius = 2000;  // 最大半径
 
         for (int i = 0; i < maxTries; i++) {
-            // 在 -1000 到 1000 范围内随机选择 X 和 Z
-            int x = random.nextInt(2000) - 1000;
-            int z = random.nextInt(2000) - 1000;
+            // 在圆形区域内随机选择位置（而不是正方形）
+            double angle = random.nextDouble() * 2 * Math.PI;
+            double radius = minRadius + random.nextDouble() * (maxRadius - minRadius);
 
-            // 获取该位置的最高方块（地表）
+            int x = (int) (radius * Math.cos(angle));
+            int z = (int) (radius * Math.sin(angle));
+
+            // 1️⃣ 先检查生物群系（FastRTP核心优化）
+            // 这一步不需要加载区块，非常快
+            Biome biome = world.getBiome(x, 64, z);
+            if (BLACKLISTED_BIOMES.contains(biome)) {
+                continue;  // 跳过海洋等生物群系
+            }
+
+            // 2️⃣ 获取地表高度（需要加载区块）
             int y = world.getHighestBlockYAt(x, z);
+
+            // 检查高度是否合理（避免虚空或过高）
+            if (y < 60 || y > 200) {
+                continue;
+            }
 
             Location location = new Location(world, x + 0.5, y, z + 0.5);
 
-            // 检查是否是安全位置（不在危险方块上）
-            if (isSafeLocation(location)) {
+            // 3️⃣ 完整的安全检查
+            if (isLocationSafe(location)) {
                 return location;
             }
         }
 
         // 如果找不到安全位置，返回世界出生点
+        plugin.getLogger().warning("无法找到安全的随机位置，使用世界出生点");
         return world.getSpawnLocation();
     }
 
     /**
-     * 检查位置是否安全
+     * 完整的位置安全检查（借鉴FastRTP）
      */
-    private boolean isSafeLocation(Location location) {
-        org.bukkit.Material blockType = location.getBlock().getType();
+    private boolean isLocationSafe(Location location) {
+        // 检查脚下方块
+        Material ground = location.getBlock().getType();
+        if (isDangerousBlock(ground) || !ground.isSolid()) {
+            return false;
+        }
 
-        // 危险方块列表
-        return blockType != org.bukkit.Material.LAVA
-            && blockType != org.bukkit.Material.FIRE
-            && blockType != org.bukkit.Material.CACTUS
-            && blockType != org.bukkit.Material.MAGMA_BLOCK
-            && blockType != org.bukkit.Material.CAMPFIRE
-            && blockType != org.bukkit.Material.SOUL_CAMPFIRE
-            && blockType != org.bukkit.Material.WITHER_ROSE
-            && blockType != org.bukkit.Material.SWEET_BERRY_BUSH;
+        // 检查头部空间（防止窒息）
+        Location head1 = location.clone().add(0, 1, 0);
+        Location head2 = location.clone().add(0, 2, 0);
+
+        Material headBlock1 = head1.getBlock().getType();
+        Material headBlock2 = head2.getBlock().getType();
+
+        if (headBlock1.isSolid() || headBlock2.isSolid()) {
+            return false;  // 会窒息
+        }
+
+        // 检查周围是否有危险（4格范围）
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                Location check = location.clone().add(dx, 0, dz);
+                Material blockType = check.getBlock().getType();
+
+                if (isDangerousBlock(blockType)) {
+                    return false;  // 周围有危险
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 判断方块是否危险
+     */
+    private boolean isDangerousBlock(Material material) {
+        return material == Material.LAVA
+            || material == Material.FIRE
+            || material == Material.SOUL_FIRE
+            || material == Material.CACTUS
+            || material == Material.MAGMA_BLOCK
+            || material == Material.CAMPFIRE
+            || material == Material.SOUL_CAMPFIRE
+            || material == Material.WITHER_ROSE
+            || material == Material.SWEET_BERRY_BUSH
+            || material == Material.POWDER_SNOW;
     }
 }
