@@ -29,12 +29,25 @@ public class PlayerJoinListener implements Listener {
 
             // 所有玩家都先传送到等待大厅
 
-            // 1. 记录玩家当前位置（RandomSpawn处理后的位置/老玩家的退出位置）
-            Location targetLocation = player.getLocation().clone();
-            plugin.getQueueManager().recordTargetLocation(player.getUniqueId(), targetLocation);
+            // 1. 检查并记录玩家位置（仅记录游戏区位置，不记录等待平台位置）
+            Location currentLocation = player.getLocation().clone();
+            Location lobbyLocation = plugin.getConfigManager().getLobbyLocation();
 
-            plugin.getLogger().info("记录 " + player.getName() + " 的目标位置: " +
-                String.format("%.1f, %.1f, %.1f", targetLocation.getX(), targetLocation.getY(), targetLocation.getZ()));
+            // 判断当前位置是否在等待平台附近（5格范围内）
+            boolean isInLobby = currentLocation.getWorld().equals(lobbyLocation.getWorld())
+                && Math.abs(currentLocation.getX() - lobbyLocation.getX()) < 5
+                && Math.abs(currentLocation.getY() - lobbyLocation.getY()) < 5
+                && Math.abs(currentLocation.getZ() - lobbyLocation.getZ()) < 5;
+
+            if (!isInLobby) {
+                // 不在等待平台，记录这个位置（游戏区位置）
+                plugin.getQueueManager().recordTargetLocation(player.getUniqueId(), currentLocation);
+                plugin.getLogger().info("记录 " + player.getName() + " 的游戏区位置: " +
+                    String.format("%.1f, %.1f, %.1f", currentLocation.getX(), currentLocation.getY(), currentLocation.getZ()));
+            } else {
+                // 在等待平台，不更新位置（保留之前的记录，或使用默认位置）
+                plugin.getLogger().info(player.getName() + " 在等待平台退出，使用之前记录的位置");
+            }
 
             // 2. 传送到等待大厅
             TeleportUtil.teleportToLobby(player, plugin);

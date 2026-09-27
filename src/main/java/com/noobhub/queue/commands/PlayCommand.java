@@ -83,7 +83,7 @@ public class PlayCommand implements CommandExecutor {
         Location targetLocation = plugin.getQueueManager().getTargetLocation(uuid);
 
         if (targetLocation != null) {
-            // 传送到记录的位置
+            // 有记录的位置，传送过去
             player.teleport(targetLocation);
             plugin.getLogger().info(player.getName() + " 执行/play进入游戏，传送到: " +
                 String.format("%.1f, %.1f, %.1f", targetLocation.getX(), targetLocation.getY(), targetLocation.getZ()));
@@ -91,10 +91,16 @@ public class PlayCommand implements CommandExecutor {
             // 移除位置记录
             plugin.getQueueManager().removeTargetLocation(uuid);
         } else {
-            // 如果没有记录位置，传送到世界出生点
-            Location spawn = player.getWorld().getSpawnLocation();
+            // 没有记录位置（可能是新玩家或在等待平台退出的玩家）
+            // 使用RandomSpawn的逻辑：先传送到当前世界的随机位置，让RandomSpawn处理
+            plugin.getLogger().info(player.getName() + " 没有记录位置，将由RandomSpawn分配新位置");
+
+            // 传送到主世界出生点，然后让RandomSpawn重新处理
+            Location spawn = plugin.getServer().getWorld("world").getSpawnLocation();
             player.teleport(spawn);
-            plugin.getLogger().warning(player.getName() + " 没有记录的目标位置，传送到世界出生点");
+
+            // 立即触发RandomSpawn（如果有的话）
+            // RandomSpawn会在玩家传送后自动处理
         }
 
         MessageUtil.send(player, "§a欢迎来到游戏！");
