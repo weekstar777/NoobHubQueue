@@ -19,65 +19,97 @@ public class PlayerJoinListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
-        // 延迟1 tick，让RandomSpawn等插件先处理
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (!player.isOnline()) return;
+        // 判断是否是新玩家
+        boolean isNewPlayer = !player.hasPlayedBefore();
 
-            // 所有玩家都先传送到等待大厅
+        if (isNewPlayer) {
+            // 新玩家：立即传送到等待平台，不延迟
+            plugin.getLogger().info(player.getName() + " 是新玩家，立即传送到等待平台");
 
-            // 1. 检查并记录玩家位置（仅记录游戏区位置，不记录等待平台位置）
-            Location currentLocation = player.getLocation().clone();
-            Location lobbyLocation = plugin.getConfigManager().getLobbyLocation();
-
-            // 判断当前位置是否在等待平台附近（20格范围内）
-            boolean isInLobby = currentLocation.getWorld().equals(lobbyLocation.getWorld())
-                && Math.abs(currentLocation.getX() - lobbyLocation.getX()) < 20
-                && Math.abs(currentLocation.getY() - lobbyLocation.getY()) < 20
-                && Math.abs(currentLocation.getZ() - lobbyLocation.getZ()) < 20;
-
-            if (!isInLobby) {
-                // 不在等待平台，记录游戏区位置并保存物品
-                plugin.getQueueManager().recordTargetLocation(player.getUniqueId(), currentLocation);
-                plugin.getQueueManager().saveInventory(player);
-                plugin.getLogger().info("记录 " + player.getName() + " 的游戏区位置和物品: " +
-                    String.format("%.1f, %.1f, %.1f", currentLocation.getX(), currentLocation.getY(), currentLocation.getZ()));
-            } else {
-                // 在等待平台，不更新位置和物品（保留之前的游戏区数据）
-                plugin.getLogger().info(player.getName() + " 在等待平台退出，保留之前的位置和物品数据");
-            }
-
-            // 2. 传送到等待大厅
+            // 立即传送（防止看到游戏区）
             TeleportUtil.teleportToLobby(player, plugin);
 
-            // 3. 设置访客模式（清空物品栏）
+            // 设置访客模式
             setGuestMode(player);
-
-            // 标记为访客模式
             plugin.getQueueManager().setGuestMode(player.getUniqueId(), true);
 
-            // 5. 检查已占用名额，决定是否需要排队
-            // 已占用名额 = 当前在线人数（包括自己）- 排队人数
-            int occupiedSlots = Bukkit.getOnlinePlayers().size() - plugin.getQueueManager().getQueueSize();
-            int maxPlayers = plugin.getConfigManager().getMaxGamePlayers();
+            // 检查名额分配
+            handleQueueAssignment(player);
 
-            plugin.getLogger().info(player.getName() + " 加入服务器，当前占用名额: " + occupiedSlots + "/" + maxPlayers);
+        } else {
+            // 老玩家：延迟1 tick，等待Paper恢复位置
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (!player.isOnline()) return;
 
-            if (occupiedSlots <= maxPlayers) {
-                // 有空位，玩家占用一个名额，可以随时 /play 传送
-                MessageUtil.send(player, "§a§l欢迎来到 NoobHub！");
-                MessageUtil.send(player, "§7输入 §6/play §7即可进入游戏");
-                plugin.getLogger().info(player.getName() + " 占用名额 " + occupiedSlots + "/" + maxPlayers + "，可随时传送");
-            } else {
-                // 已满100人，加入排队系统等待空位
-                plugin.getQueueManager().addToQueue(player);
-                plugin.getLogger().info(player.getName() + " 加入排队系统（名额已满）");
-            }
+                handleOldPlayerJoin(player);
 
-        }, 1L);
+            }, 1L);
+        }
+    }
+
+    /**
+     * 处理老玩家进服
+     */
+    private void handleOldPlayerJoin(Player player) {
+        // 1. 检查并记录玩家位置（仅记录游戏区位置）
+        Location currentLocation = player.getLocation().clone();
+        Location lobbyLocation = plugin.getConfigManager().getLobbyLocation();
+
+        // 判断当前位置是否在等待平台附近（20格范围内）
+        boolean isInLobby = currentLocation.getWorld().equals(lobbyLocation.getWorld())
+            && Math.abs(currentLocation.getX() - lobbyLocation.getX()) < 20
+            && Math.abs(currentLocation.getY() - lobbyLocation.getY()) < 20
+            && Math.abs(currentLocation.getZ() - lobbyLocation.getZ()) < 20;
+
+        if (!isInLobby) {
+            // 不在等待平台，记录游戏区位置并保存物品
+            plugin.getQueueManager().recordTargetLocation(player.getUniqueId(), currentLocation);
+            plugin.getQueueManager().saveInventory(player);
+            plugin.getLogger().info("记录 " + player.getName() + " 的游戏区位置和物品: " +
+                String.format("%.1f, %.1f, %.1f", currentLocation.getX(), currentLocation.getY(), currentLocation.getZ()));
+        } else {
+            // 在等待平台，不更新位置和物品（保留之前的游戏区数据）
+            plugin.getLogger().info(player.getName() + " 在等待平台退出，保留之前的位置和物品数据");
+        }
+
+        // 2. 传送到等待大厅
+        TeleportUtil.teleportToLobby(player, plugin);
+
+        // 3. 设置访客模式（清空物品栏）
+        setGuestMode(player);
+
+        // 标记为访客模式
+        plugin.getQueueManager().setGuestMode(player.getUniqueId(), true);
+
+        // 4. 检查名额分配
+        handleQueueAssignment(player);
+    }
+
+    /**
+     * 处理排队分配逻辑
+     */
+    private void handleQueueAssignment(Player player) {
+        // 检查已占用名额，决定是否需要排队
+        // 已占用名额 = 当前在线人数（包括自己）- 排队人数
+        int occupiedSlots = Bukkit.getOnlinePlayers().size() - plugin.getQueueManager().getQueueSize();
+        int maxPlayers = plugin.getConfigManager().getMaxGamePlayers();
+
+        plugin.getLogger().info(player.getName() + " 加入服务器，当前占用名额: " + occupiedSlots + "/" + maxPlayers);
+
+        if (occupiedSlots <= maxPlayers) {
+            // 有空位，玩家占用一个名额，可以随时 /play 传送
+            MessageUtil.send(player, "§a§l欢迎来到 NoobHub！");
+            MessageUtil.send(player, "§7输入 §6/play §7即可进入游戏");
+            plugin.getLogger().info(player.getName() + " 占用名额 " + occupiedSlots + "/" + maxPlayers + "，可随时传送");
+        } else {
+            // 已满100人，加入排队系统等待空位
+            plugin.getQueueManager().addToQueue(player);
+            plugin.getLogger().info(player.getName() + " 加入排队系统（名额已满）");
+        }
     }
 
     /**
@@ -99,25 +131,6 @@ public class PlayerJoinListener implements Listener {
 
         plugin.getLogger().info(player.getName() + " 已设置为访客模式");
     }
-
-    /**
-     * 获取当前在游戏区域的玩家数（不包括等待大厅的）
-     */
-    private int getGamePlayers() {
-        // 总在线人数 - 排队人数 - 在等待大厅但未排队的人数
-        int totalOnline = Bukkit.getOnlinePlayers().size();
-        int queueSize = plugin.getQueueManager().getQueueSize();
-        int guestNotInQueue = 0;
-
-        // 统计在等待大厅但未排队的玩家数
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            if (plugin.getQueueManager().isGuestMode(p.getUniqueId())
-                && !plugin.getQueueManager().isInQueue(p.getUniqueId())) {
-                guestNotInQueue++;
-            }
-        }
-
-        return totalOnline - queueSize - guestNotInQueue;
-    }
 }
+
 
