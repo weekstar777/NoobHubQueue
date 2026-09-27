@@ -64,9 +64,12 @@ public class PlayerJoinListener implements Listener {
     }
 
     /**
-     * 设置访客模式
+     * 设置访客模式（主城等待）
      */
     private void setGuestMode(Player player) {
+        // 设置为冒险模式（无法破坏/放置方块）
+        player.setGameMode(org.bukkit.GameMode.ADVENTURE);
+
         // 清空物品栏
         player.getInventory().clear();
 
@@ -80,6 +83,6 @@ public class PlayerJoinListener implements Listener {
         // 设置生命值
         player.setHealth(player.getMaxHealth());
 
-        plugin.getLogger().info(player.getName() + " 已设置为访客模式");
+        plugin.getLogger().info(player.getName() + " 已设置为访客模式（冒险模式）");
     }
 }

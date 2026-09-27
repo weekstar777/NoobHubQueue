@@ -96,6 +96,9 @@ public class PlayCommand implements CommandExecutor {
         // 取消访客模式
         plugin.getQueueManager().setGuestMode(uuid, false);
 
+        // 恢复生存模式
+        player.setGameMode(org.bukkit.GameMode.SURVIVAL);
+
         MessageUtil.send(player, "§a§l正在进入游戏...");
 
         // 恢复玩家物品和装备

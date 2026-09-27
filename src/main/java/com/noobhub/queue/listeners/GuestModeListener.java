@@ -1,13 +1,10 @@
 package com.noobhub.queue.listeners;
 
 import com.noobhub.queue.NoobHubQueue;
-import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -17,7 +14,18 @@ import org.bukkit.event.player.PlayerPickupItemEvent;
 
 /**
  * 访客模式监听器
- * 限制在等待平台的玩家只能移动和空A
+ * 配合冒险模式，限制主城玩家的行为
+ *
+ * 冒险模式已处理：
+ * - 破坏方块 ✓
+ * - 放置方块 ✓
+ *
+ * 本监听器额外处理：
+ * - 物品交互
+ * - 物品拾取/丢弃
+ * - 背包操作
+ * - 饥饿消耗
+ * - 攻击限制
  */
 public class GuestModeListener implements Listener {
 
@@ -28,7 +36,7 @@ public class GuestModeListener implements Listener {
     }
 
     /**
-     * 检查玩家是否在访客模式（在等待大厅）
+     * 检查玩家是否在访客模式（在主城）
      */
     private boolean isGuest(Player player) {
         return plugin.getQueueManager().isGuestMode(player.getUniqueId());
@@ -39,26 +47,6 @@ public class GuestModeListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerInteract(PlayerInteractEvent event) {
-        if (isGuest(event.getPlayer())) {
-            event.setCancelled(true);
-        }
-    }
-
-    /**
-     * 阻止访客破坏方块
-     */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onBlockBreak(BlockBreakEvent event) {
-        if (isGuest(event.getPlayer())) {
-            event.setCancelled(true);
-        }
-    }
-
-    /**
-     * 阻止访客放置方块
-     */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onBlockPlace(BlockPlaceEvent event) {
         if (isGuest(event.getPlayer())) {
             event.setCancelled(true);
         }
