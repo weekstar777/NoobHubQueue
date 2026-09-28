@@ -7,9 +7,7 @@ import net.kyori.adventure.title.Title;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.LuckPermsProvider;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.time.Duration;
@@ -29,23 +27,8 @@ public class QueueManager {
     // 记录加入时间
     private final Map<UUID, Long> joinTime;
 
-    // 记录玩家的目标位置
-    private final Map<UUID, Location> targetLocations;
-
     // 记录已经通知过"轮到你了"的玩家，避免重复通知
     private final Set<UUID> notifiedPlayers;
-
-    // 记录处于访客模式的玩家（在等待大厅）
-    private final Set<UUID> guestModePlayers;
-
-    // 保存玩家的物品栏内容
-    private final Map<UUID, ItemStack[]> savedInventories;
-
-    // 保存玩家的装备内容
-    private final Map<UUID, ItemStack[]> savedArmor;
-
-    // 保存玩家的出生点（第一次随机传送的位置）
-    private final Map<UUID, Location> playerSpawnPoints;
 
     private BukkitTask checkTask;
     private LuckPerms luckPerms;
@@ -55,12 +38,7 @@ public class QueueManager {
         this.vipQueue = new LinkedList<>();
         this.normalQueue = new LinkedList<>();
         this.joinTime = new ConcurrentHashMap<>();
-        this.targetLocations = new ConcurrentHashMap<>();
         this.notifiedPlayers = ConcurrentHashMap.newKeySet();
-        this.guestModePlayers = ConcurrentHashMap.newKeySet();
-        this.savedInventories = new ConcurrentHashMap<>();
-        this.savedArmor = new ConcurrentHashMap<>();
-        this.playerSpawnPoints = new ConcurrentHashMap<>();
 
         // 尝试获取LuckPerms
         try {
@@ -70,27 +48,6 @@ public class QueueManager {
             plugin.getLogger().warning("未找到 LuckPerms，VIP功能将被禁用");
             this.luckPerms = null;
         }
-    }
-
-    /**
-     * 记录玩家的目标位置
-     */
-    public void recordTargetLocation(UUID uuid, Location location) {
-        targetLocations.put(uuid, location);
-    }
-
-    /**
-     * 获取玩家的目标位置
-     */
-    public Location getTargetLocation(UUID uuid) {
-        return targetLocations.get(uuid);
-    }
-
-    /**
-     * 移除玩家的目标位置记录
-     */
-    public void removeTargetLocation(UUID uuid) {
-        targetLocations.remove(uuid);
     }
 
     /**
@@ -199,24 +156,6 @@ public class QueueManager {
     }
 
     /**
-     * 设置玩家的访客模式状态
-     */
-    public void setGuestMode(UUID uuid, boolean enabled) {
-        if (enabled) {
-            guestModePlayers.add(uuid);
-        } else {
-            guestModePlayers.remove(uuid);
-        }
-    }
-
-    /**
-     * 检查玩家是否处于访客模式
-     */
-    public boolean isGuestMode(UUID uuid) {
-        return guestModePlayers.contains(uuid);
-    }
-
-    /**
      * 检查玩家是否已被通知（轮到你了）
      */
     public boolean isNotified(UUID uuid) {
@@ -228,45 +167,6 @@ public class QueueManager {
      */
     public void clearNotification(UUID uuid) {
         notifiedPlayers.remove(uuid);
-    }
-
-    /**
-     * 保存玩家的物品栏和装备
-     */
-    public void saveInventory(Player player) {
-        UUID uuid = player.getUniqueId();
-        savedInventories.put(uuid, player.getInventory().getContents());
-        savedArmor.put(uuid, player.getInventory().getArmorContents());
-        plugin.getLogger().info("保存 " + player.getName() + " 的物品和装备");
-    }
-
-    /**
-     * 恢复玩家的物品栏和装备
-     */
-    public void restoreInventory(Player player) {
-        UUID uuid = player.getUniqueId();
-        ItemStack[] inventory = savedInventories.get(uuid);
-        ItemStack[] armor = savedArmor.get(uuid);
-
-        if (inventory != null) {
-            player.getInventory().setContents(inventory);
-            savedInventories.remove(uuid);
-            plugin.getLogger().info("恢复 " + player.getName() + " 的物品栏");
-        }
-
-        if (armor != null) {
-            player.getInventory().setArmorContents(armor);
-            savedArmor.remove(uuid);
-            plugin.getLogger().info("恢复 " + player.getName() + " 的装备");
-        }
-    }
-
-    /**
-     * 清除保存的物品数据
-     */
-    public void clearSavedInventory(UUID uuid) {
-        savedInventories.remove(uuid);
-        savedArmor.remove(uuid);
     }
 
     private boolean isVIP(Player player) {
@@ -381,21 +281,5 @@ public class QueueManager {
             }
             normalIndex++;
         }
-    }
-
-    /**
-     * 设置玩家的出生点（第一次随机传送的位置）
-     */
-    public void setPlayerSpawnPoint(UUID uuid, Location location) {
-        playerSpawnPoints.put(uuid, location);
-        plugin.getLogger().info("设置玩家 " + uuid + " 的出生点: " +
-            String.format("%.1f, %.1f, %.1f", location.getX(), location.getY(), location.getZ()));
-    }
-
-    /**
-     * 获取玩家的出生点
-     */
-    public Location getPlayerSpawnPoint(UUID uuid) {
-        return playerSpawnPoints.get(uuid);
     }
 }
