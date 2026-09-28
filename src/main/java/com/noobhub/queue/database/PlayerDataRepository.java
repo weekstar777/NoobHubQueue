@@ -18,9 +18,9 @@ public class PlayerDataRepository {
     }
 
     public void saveSpawnPoint(UUID uuid, Location location) {
-        String sql = "INSERT INTO player_data (uuid, spawn_x, spawn_y, spawn_z, spawn_world) " +
-                "VALUES (?, ?, ?, ?, ?) " +
-                "ON DUPLICATE KEY UPDATE spawn_x=?, spawn_y=?, spawn_z=?, spawn_world=?";
+        String sql = "INSERT INTO player_data (uuid, spawn_x, spawn_y, spawn_z, spawn_world, has_entered_game) " +
+                "VALUES (?, ?, ?, ?, ?, TRUE) " +
+                "ON DUPLICATE KEY UPDATE spawn_x=?, spawn_y=?, spawn_z=?, spawn_world=?, has_entered_game=TRUE";
 
         try (Connection conn = databaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -61,5 +61,22 @@ public class PlayerDataRepository {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public boolean hasEnteredGame(UUID uuid) {
+        String sql = "SELECT has_entered_game FROM player_data WHERE uuid=?";
+
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, uuid.toString());
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getBoolean("has_entered_game");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

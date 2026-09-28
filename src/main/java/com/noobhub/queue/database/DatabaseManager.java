@@ -47,6 +47,7 @@ public class DatabaseManager {
                 "spawn_y DOUBLE," +
                 "spawn_z DOUBLE," +
                 "spawn_world VARCHAR(100)," +
+                "has_entered_game BOOLEAN DEFAULT FALSE," +
                 "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" +
                 ")";
 

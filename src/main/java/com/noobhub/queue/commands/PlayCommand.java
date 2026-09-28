@@ -13,7 +13,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -98,14 +97,12 @@ public class PlayCommand implements CommandExecutor {
             return;
         }
 
-        // 检查游戏世界的 playerdata 文件是否存在
-        File worldFolder = gameWorld.getWorldFolder();
-        File playerDataFile = new File(worldFolder, "playerdata/" + uuid.toString() + ".dat");
-        boolean isFirstTime = !playerDataFile.exists();
+        // 检查是否首次进入游戏（从 MySQL 查询）
+        boolean isFirstTime = !plugin.getPlayerDataRepository().hasEnteredGame(uuid);
 
         if (isFirstTime) {
             // 首次进入：异步随机传送并设置固定出生点
-            plugin.getLogger().info(player.getName() + " 首次进入游戏（playerdata 不存在），异步生成随机出生点");
+            plugin.getLogger().info(player.getName() + " 首次进入游戏，异步生成随机出生点");
 
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 long startTime = System.currentTimeMillis();
