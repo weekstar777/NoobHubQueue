@@ -149,12 +149,12 @@ public class PlayCommand implements CommandExecutor {
     }
 
     /**
-     * 寻找安全的随机位置（借鉴FastRTP的核心算法）
+     * 寻找安全的随机位置（完全模仿FastRTP默认配置）
      */
     private Location findSafeRandomLocation(World world) {
         int maxTries = 50;
-        int minRadius = 500;   // 最小半径
-        int maxRadius = 2000;  // 最大半径
+        int minRadius = 0;      // 最小半径（FastRTP默认）
+        int maxRadius = 25000;  // 最大半径（FastRTP默认）
 
         for (int i = 0; i < maxTries; i++) {
             // 在圆形区域内随机选择位置（而不是正方形）
