@@ -93,11 +93,8 @@ public class PlayCommand implements CommandExecutor {
         // 清除通知标记（如果有）
         plugin.getQueueManager().clearNotification(uuid);
 
-        // 取消访客模式
+        // 取消访客模式标记
         plugin.getQueueManager().setGuestMode(uuid, false);
-
-        // 恢复生存模式
-        player.setGameMode(org.bukkit.GameMode.SURVIVAL);
 
         MessageUtil.send(player, "§e正在传送中~");
 
@@ -109,46 +106,47 @@ public class PlayCommand implements CommandExecutor {
             return;
         }
 
-        // 获取目标位置
-        Location targetLocation = plugin.getQueueManager().getTargetLocation(uuid);
+        // 检查是否首次进入
+        boolean isFirstTime = plugin.getPlayerDataRepository().isFirstTime(uuid);
 
-        if (targetLocation != null) {
-            // 有记录的位置，传送到游戏世界
-            // Minecraft 会自动切换到游戏世界的 playerdata（恢复物品栏）
-            player.teleport(targetLocation);
-            plugin.getLogger().info(player.getName() + " 执行/play进入游戏，传送到: " +
-                String.format("%.1f, %.1f, %.1f", targetLocation.getX(), targetLocation.getY(), targetLocation.getZ()));
+        if (isFirstTime) {
+            // 首次进入：异步随机传送并设置固定出生点
+            plugin.getLogger().info(player.getName() + " 首次进入游戏，异步生成随机出生点");
 
-            // 移除位置记录
-            plugin.getQueueManager().removeTargetLocation(uuid);
-
-            MessageUtil.send(player, "§a已到达游戏区域！");
-        } else {
-            // 没有记录位置（新玩家首次/play）
-            // 使用异步随机传送（借鉴FastRTP）
-            plugin.getLogger().info(player.getName() + " 没有记录位置，异步生成随机出生点");
-
-            // 异步执行，避免卡服
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 long startTime = System.currentTimeMillis();
                 Location randomLocation = findSafeRandomLocation(gameWorld);
                 long duration = System.currentTimeMillis() - startTime;
 
-                // 回到主线程传送玩家到游戏世界
-                // Minecraft 会自动切换到游戏世界的 playerdata
+                // 回到主线程传送玩家
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     player.teleport(randomLocation);
 
-                    // 保存为玩家的出生点（用于死亡重生）
-                    plugin.getQueueManager().setPlayerSpawnPoint(uuid, randomLocation);
+                    // 保存为玩家的固定出生点（MySQL）
+                    plugin.getPlayerDataRepository().saveSpawnPoint(uuid, randomLocation);
 
                     plugin.getLogger().info(player.getName() + " 首次进入游戏，传送到随机位置: " +
                         String.format("%.1f, %.1f, %.1f (耗时: %dms)",
                             randomLocation.getX(), randomLocation.getY(), randomLocation.getZ(), duration));
 
                     MessageUtil.send(player, "§a已到达游戏区域！");
+                    MessageUtil.send(player, "§7这是你的固定出生点，死亡后会在此重生");
                 });
             });
+        } else {
+            // 非首次：传送到上次位置
+            Location lastLocation = plugin.getPlayerDataRepository().getLastLocation(uuid);
+
+            if (lastLocation != null) {
+                player.teleport(lastLocation);
+                plugin.getLogger().info(player.getName() + " 执行/play进入游戏，传送到上次位置: " +
+                    String.format("%.1f, %.1f, %.1f", lastLocation.getX(), lastLocation.getY(), lastLocation.getZ()));
+                MessageUtil.send(player, "§a已到达游戏区域！");
+            } else {
+                // 异常情况：没有记录但不是首次（数据丢失）
+                player.teleport(gameWorld.getSpawnLocation());
+                MessageUtil.send(player, "§e数据异常，已传送到世界出生点");
+            }
         }
     }
 

@@ -7,6 +7,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
+import java.util.UUID;
+
 public class PlayerQuitListener implements Listener {
 
     private final NoobHubQueue plugin;
@@ -18,32 +20,24 @@ public class PlayerQuitListener implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        java.util.UUID uuid = player.getUniqueId();
+        UUID uuid = player.getUniqueId();
 
-        // 使用双世界方案后，只需记录玩家在游戏世界的退出位置
-        // 物品栏由 Minecraft 自动保存到各世界的 playerdata
-
+        // 记录玩家在游戏世界的退出位置（MySQL）
         Location currentLocation = player.getLocation();
         String worldName = currentLocation.getWorld().getName();
 
         if (worldName.equals("world")) {
-            // 在游戏世界退出，记录位置（用于下次 /play 传送）
-            plugin.getQueueManager().recordTargetLocation(uuid, currentLocation);
+            // 在游戏世界退出，保存位置
+            plugin.getPlayerDataRepository().saveLastLocation(uuid, currentLocation);
             plugin.getLogger().info("记录 " + player.getName() + " 的退出位置: " +
                 String.format("%.1f, %.1f, %.1f", currentLocation.getX(), currentLocation.getY(), currentLocation.getZ()));
-        } else if (worldName.equals("world_lobby")) {
-            // 在主城世界退出，不记录（保留上次游戏区的位置）
-            plugin.getLogger().info(player.getName() + " 在主城退出，保留游戏区位置记录");
         }
-
-        // Minecraft 自动保存 playerdata（物品栏、血量等）
-        // 插件不需要手动保存物品栏
 
         // 清理临时状态
         plugin.getQueueManager().removeFromQueue(uuid);
         plugin.getQueueManager().clearNotification(uuid);
         plugin.getQueueManager().setGuestMode(uuid, false);
 
-        plugin.getLogger().info(event.getPlayer().getName() + " 退出服务器");
+        plugin.getLogger().info(player.getName() + " 退出服务器");
     }
 }
