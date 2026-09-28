@@ -20,38 +20,29 @@ public class PlayerQuitListener implements Listener {
         Player player = event.getPlayer();
         java.util.UUID uuid = player.getUniqueId();
 
-        // 1. 记录玩家位置和物品（仅在游戏区时记录）
+        // 使用双世界方案后，只需记录玩家在游戏世界的退出位置
+        // 物品栏由 Minecraft 自动保存到各世界的 playerdata
+
         Location currentLocation = player.getLocation();
-        Location lobbyLocation = plugin.getConfigManager().getLobbyLocation();
+        String worldName = currentLocation.getWorld().getName();
 
-        // 判断是否在主城（20格范围内）
-        boolean isInLobby = currentLocation.getWorld().equals(lobbyLocation.getWorld())
-            && Math.abs(currentLocation.getX() - lobbyLocation.getX()) < 20
-            && Math.abs(currentLocation.getY() - lobbyLocation.getY()) < 20
-            && Math.abs(currentLocation.getZ() - lobbyLocation.getZ()) < 20;
-
-        if (!isInLobby) {
-            // 在游戏区退出，记录位置和物品
+        if (worldName.equals("world")) {
+            // 在游戏世界退出，记录位置（用于下次 /play 传送）
             plugin.getQueueManager().recordTargetLocation(uuid, currentLocation);
-            plugin.getQueueManager().saveInventory(player);
-            plugin.getLogger().info("记录 " + player.getName() + " 的退出位置和物品: " +
+            plugin.getLogger().info("记录 " + player.getName() + " 的退出位置: " +
                 String.format("%.1f, %.1f, %.1f", currentLocation.getX(), currentLocation.getY(), currentLocation.getZ()));
-        } else {
-            // 在主城退出，不更新记录（保留上次游戏区的数据）
-            plugin.getLogger().info(player.getName() + " 在主城退出，保留游戏区数据");
+        } else if (worldName.equals("world_lobby")) {
+            // 在主城世界退出，不记录（保留上次游戏区的位置）
+            plugin.getLogger().info(player.getName() + " 在主城退出，保留游戏区位置记录");
         }
 
-        // 2. 清理临时状态
-        // 从队列中移除
+        // Minecraft 自动保存 playerdata（物品栏、血量等）
+        // 插件不需要手动保存物品栏
+
+        // 清理临时状态
         plugin.getQueueManager().removeFromQueue(uuid);
-
-        // 清除通知标记
         plugin.getQueueManager().clearNotification(uuid);
-
-        // 清除访客模式标记
         plugin.getQueueManager().setGuestMode(uuid, false);
-
-        // 注意：不清除 targetLocation 和 savedInventories（已在上面处理）
 
         plugin.getLogger().info(event.getPlayer().getName() + " 退出服务器");
     }

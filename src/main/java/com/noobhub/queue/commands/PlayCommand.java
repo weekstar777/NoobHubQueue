@@ -99,16 +99,22 @@ public class PlayCommand implements CommandExecutor {
         // 恢复生存模式
         player.setGameMode(org.bukkit.GameMode.SURVIVAL);
 
-        MessageUtil.send(player, "§a§l正在进入游戏...");
+        MessageUtil.send(player, "§e正在传送中~");
 
-        // 恢复玩家物品和装备
-        plugin.getQueueManager().restoreInventory(player);
+        // 获取游戏世界
+        org.bukkit.World gameWorld = Bukkit.getWorld("world");
+        if (gameWorld == null) {
+            plugin.getLogger().severe("游戏世界 world 不存在！");
+            MessageUtil.send(player, "§c服务器配置错误：游戏世界不存在");
+            return;
+        }
 
         // 获取目标位置
         Location targetLocation = plugin.getQueueManager().getTargetLocation(uuid);
 
         if (targetLocation != null) {
-            // 有记录的位置，传送过去
+            // 有记录的位置，传送到游戏世界
+            // Minecraft 会自动切换到游戏世界的 playerdata（恢复物品栏）
             player.teleport(targetLocation);
             plugin.getLogger().info(player.getName() + " 执行/play进入游戏，传送到: " +
                 String.format("%.1f, %.1f, %.1f", targetLocation.getX(), targetLocation.getY(), targetLocation.getZ()));
@@ -116,21 +122,20 @@ public class PlayCommand implements CommandExecutor {
             // 移除位置记录
             plugin.getQueueManager().removeTargetLocation(uuid);
 
-            MessageUtil.send(player, "§a欢迎来到游戏！");
+            MessageUtil.send(player, "§a已到达游戏区域！");
         } else {
             // 没有记录位置（新玩家首次/play）
             // 使用异步随机传送（借鉴FastRTP）
             plugin.getLogger().info(player.getName() + " 没有记录位置，异步生成随机出生点");
 
-            MessageUtil.send(player, "§e正在寻找安全位置...");
-
             // 异步执行，避免卡服
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 long startTime = System.currentTimeMillis();
-                Location randomLocation = findSafeRandomLocation(player.getWorld());
+                Location randomLocation = findSafeRandomLocation(gameWorld);
                 long duration = System.currentTimeMillis() - startTime;
 
-                // 回到主线程传送玩家
+                // 回到主线程传送玩家到游戏世界
+                // Minecraft 会自动切换到游戏世界的 playerdata
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     player.teleport(randomLocation);
 
@@ -141,19 +146,18 @@ public class PlayCommand implements CommandExecutor {
                         String.format("%.1f, %.1f, %.1f (耗时: %dms)",
                             randomLocation.getX(), randomLocation.getY(), randomLocation.getZ(), duration));
 
-                    MessageUtil.send(player, "§a欢迎来到游戏！");
-                    MessageUtil.send(player, "§7§o找到安全位置耗时: " + duration + "ms");
+                    MessageUtil.send(player, "§a已到达游戏区域！");
                 });
             });
         }
     }
 
     /**
-     * 寻找安全的随机位置（完全模仿FastRTP默认配置）
+     * 寻找安全的随机位置（FastRTP范围 + 主城保护圈）
      */
     private Location findSafeRandomLocation(World world) {
         int maxTries = 50;
-        int minRadius = 0;      // 最小半径（FastRTP默认）
+        int minRadius = 1000;   // 最小半径（保护主城周围 1000格）
         int maxRadius = 25000;  // 最大半径（FastRTP默认）
 
         for (int i = 0; i < maxTries; i++) {

@@ -22,21 +22,31 @@ public class PlayerJoinListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
-        // 所有玩家统一处理：立即传送到主城
-        // 位置和物品的记录在退出时已完成，不需要在进服时处理
+        plugin.getLogger().info(player.getName() + " 进入服务器，传送到主城世界");
 
-        plugin.getLogger().info(player.getName() + " 进入服务器，立即传送到主城");
+        // 1. 传送到主城世界（world_lobby）
+        // Minecraft 会自动加载该世界的 playerdata（空物品栏）
+        org.bukkit.World lobbyWorld = Bukkit.getWorld("world_lobby");
+        if (lobbyWorld == null) {
+            plugin.getLogger().severe("主城世界 world_lobby 不存在！请先创建主城世界。");
+            player.kickPlayer("§c服务器配置错误：主城世界不存在");
+            return;
+        }
 
-        // 1. 立即传送到主城
-        TeleportUtil.teleportToLobby(player, plugin);
+        // 传送到主城世界的出生点
+        org.bukkit.Location lobbySpawn = lobbyWorld.getSpawnLocation();
+        player.teleport(lobbySpawn);
 
-        // 2. 设置访客模式
-        setGuestMode(player);
+        // 2. 设置冒险模式
+        player.setGameMode(org.bukkit.GameMode.ADVENTURE);
 
         // 3. 标记为访客模式
         plugin.getQueueManager().setGuestMode(player.getUniqueId(), true);
 
-        // 4. 检查名额分配
+        // 4. 所有玩家都发送欢迎消息
+        MessageUtil.send(player, "§a§l欢迎来到 NoobHub！");
+
+        // 5. 检查名额分配
         handleQueueAssignment(player);
     }
 
@@ -53,7 +63,6 @@ public class PlayerJoinListener implements Listener {
 
         if (occupiedSlots <= maxPlayers) {
             // 有空位，玩家占用一个名额，可以随时 /play 传送
-            MessageUtil.send(player, "§a§l欢迎来到 NoobHub！");
             MessageUtil.send(player, "§7输入 §6/play §7即可进入游戏");
             plugin.getLogger().info(player.getName() + " 占用名额 " + occupiedSlots + "/" + maxPlayers + "，可随时传送");
         } else {
@@ -65,22 +74,16 @@ public class PlayerJoinListener implements Listener {
 
     /**
      * 设置访客模式（主城等待）
+     * 注意：使用双世界方案后，物品栏由 Minecraft 自动管理，不需要手动清空
      */
     private void setGuestMode(Player player) {
-        // 设置为冒险模式（无法破坏/放置方块）
+        // 已经在主城世界，Minecraft 自动加载该世界的 playerdata
+        // 物品栏会自动是空的（或该世界上次的状态）
+
+        // 只需要确保游戏模式、血量、饥饿值正确
         player.setGameMode(org.bukkit.GameMode.ADVENTURE);
-
-        // 清空物品栏
-        player.getInventory().clear();
-
-        // 清空装备
-        player.getInventory().setArmorContents(null);
-
-        // 设置饱食度
         player.setFoodLevel(20);
         player.setSaturation(20);
-
-        // 设置生命值
         player.setHealth(player.getMaxHealth());
 
         plugin.getLogger().info(player.getName() + " 已设置为访客模式（冒险模式）");
