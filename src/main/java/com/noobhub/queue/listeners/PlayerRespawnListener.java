@@ -19,7 +19,7 @@ public class PlayerRespawnListener implements Listener {
 
     @EventHandler
     public void onPlayerRespawn(PlayerRespawnEvent event) {
-        Player player = (Player) event.getEntity();
+        Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
 
         Location spawnPoint = plugin.getPlayerDataRepository().getSpawnPoint(uuid);
