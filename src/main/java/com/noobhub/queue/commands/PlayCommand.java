@@ -13,6 +13,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -53,12 +54,6 @@ public class PlayCommand implements CommandExecutor {
         Player player = (Player) sender;
         UUID uuid = player.getUniqueId();
 
-        // 检查是否在等待大厅（访客模式）
-        if (!plugin.getQueueManager().isGuestMode(uuid)) {
-            MessageUtil.send(player, "§c你不在等待大厅！");
-            return true;
-        }
-
         // 检查是否在队列中
         if (plugin.getQueueManager().isInQueue(uuid)) {
             // 还在队列中，说明还没轮到
@@ -93,25 +88,24 @@ public class PlayCommand implements CommandExecutor {
         // 清除通知标记（如果有）
         plugin.getQueueManager().clearNotification(uuid);
 
-        // 取消访客模式标记
-        plugin.getQueueManager().setGuestMode(uuid, false);
-
         MessageUtil.send(player, "§e正在传送中~");
 
         // 获取游戏世界
-        org.bukkit.World gameWorld = Bukkit.getWorld("world");
+        World gameWorld = Bukkit.getWorld("world");
         if (gameWorld == null) {
             plugin.getLogger().severe("游戏世界 world 不存在！");
             MessageUtil.send(player, "§c服务器配置错误：游戏世界不存在");
             return;
         }
 
-        // 检查是否首次进入
-        boolean isFirstTime = plugin.getPlayerDataRepository().isFirstTime(uuid);
+        // 检查游戏世界的 playerdata 文件是否存在
+        File worldFolder = gameWorld.getWorldFolder();
+        File playerDataFile = new File(worldFolder, "playerdata/" + uuid.toString() + ".dat");
+        boolean isFirstTime = !playerDataFile.exists();
 
         if (isFirstTime) {
             // 首次进入：异步随机传送并设置固定出生点
-            plugin.getLogger().info(player.getName() + " 首次进入游戏，异步生成随机出生点");
+            plugin.getLogger().info(player.getName() + " 首次进入游戏（playerdata 不存在），异步生成随机出生点");
 
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 long startTime = System.currentTimeMillis();
@@ -134,19 +128,10 @@ public class PlayCommand implements CommandExecutor {
                 });
             });
         } else {
-            // 非首次：传送到上次位置
-            Location lastLocation = plugin.getPlayerDataRepository().getLastLocation(uuid);
-
-            if (lastLocation != null) {
-                player.teleport(lastLocation);
-                plugin.getLogger().info(player.getName() + " 执行/play进入游戏，传送到上次位置: " +
-                    String.format("%.1f, %.1f, %.1f", lastLocation.getX(), lastLocation.getY(), lastLocation.getZ()));
-                MessageUtil.send(player, "§a已到达游戏区域！");
-            } else {
-                // 异常情况：没有记录但不是首次（数据丢失）
-                player.teleport(gameWorld.getSpawnLocation());
-                MessageUtil.send(player, "§e数据异常，已传送到世界出生点");
-            }
+            // 非首次：直接传送到游戏世界，Minecraft 会自动把玩家放到上次退出位置
+            player.teleport(gameWorld.getSpawnLocation()); // 触发世界切换
+            plugin.getLogger().info(player.getName() + " 进入游戏世界，Minecraft 将自动恢复上次位置");
+            MessageUtil.send(player, "§a已到达游戏区域！");
         }
     }
 

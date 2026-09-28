@@ -47,11 +47,6 @@ public class DatabaseManager {
                 "spawn_y DOUBLE," +
                 "spawn_z DOUBLE," +
                 "spawn_world VARCHAR(100)," +
-                "last_x DOUBLE," +
-                "last_y DOUBLE," +
-                "last_z DOUBLE," +
-                "last_world VARCHAR(100)," +
-                "first_time BOOLEAN DEFAULT TRUE," +
                 "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" +
                 ")";
 
