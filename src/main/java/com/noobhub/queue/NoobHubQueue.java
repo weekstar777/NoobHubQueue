@@ -27,6 +27,7 @@ public final class NoobHubQueue extends JavaPlugin {
 
         // 初始化数据库
         databaseManager = new DatabaseManager(this);
+        databaseManager.connect();
         playerDataRepository = new PlayerDataRepository(databaseManager);
 
         // 初始化队列管理器
