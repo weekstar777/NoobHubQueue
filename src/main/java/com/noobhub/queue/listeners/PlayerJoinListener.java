@@ -3,6 +3,8 @@ package com.noobhub.queue.listeners;
 import com.noobhub.queue.NoobHubQueue;
 import com.noobhub.queue.utils.MessageUtil;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -17,12 +19,19 @@ public class PlayerJoinListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
-        // 玩家已经在默认世界（world_lobby）出生
-        // 只需要检查排队逻辑
+        // 强制传送到主城（确保所有玩家登录都在主城）
+        if (!player.getWorld().getName().equals("world_lobby")) {
+            World lobby = Bukkit.getWorld("world_lobby");
+            if (lobby != null) {
+                Location spawnLocation = lobby.getSpawnLocation();
+                player.teleport(spawnLocation);
+                plugin.getLogger().info(player.getName() + " 从 " + player.getWorld().getName() + " 传送到主城");
+            }
+        }
 
         plugin.getLogger().info(player.getName() + " 进入服务器");
 
