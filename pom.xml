@@ -29,6 +29,11 @@
             <id>luck-snapshots</id>
             <url>https://repo.lucko.me/</url>
         </repository>
+        <!-- Multiverse-Core -->
+        <repository>
+            <id>onarandombox</id>
+            <url>https://repo.onarandombox.com/content/groups/public/</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -46,6 +51,15 @@
             <artifactId>api</artifactId>
             <version>5.4</version>
             <scope>provided</scope>
+        </dependency>
+
+        <!-- Multiverse-Core API (本地jar) -->
+        <dependency>
+            <groupId>com.onarandombox</groupId>
+            <artifactId>multiverse-core</artifactId>
+            <version>4.3.14</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../NoobHub/plugins/Multiverse-Core-4.3.14.jar</systemPath>
         </dependency>
 
         <!-- HikariCP 连接池 -->
