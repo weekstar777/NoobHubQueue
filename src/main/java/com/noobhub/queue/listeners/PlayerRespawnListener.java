@@ -1,13 +1,10 @@
 package com.noobhub.queue.listeners;
 
 import com.noobhub.queue.NoobHubQueue;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerRespawnEvent;
-
-import java.util.UUID;
 
 public class PlayerRespawnListener implements Listener {
 
@@ -20,26 +17,20 @@ public class PlayerRespawnListener implements Listener {
     @EventHandler
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
-        UUID uuid = player.getUniqueId();
 
-        Location spawnPoint = plugin.getPlayerDataRepository().getSpawnPoint(uuid);
+        // 完全遵循Minecraft原版重生机制，不做任何修改
+        // 原版逻辑：
+        // 1. 如果有床/重生锚 → 在床/锚重生
+        // 2. 如果没有 → 在世界spawn点或玩家个人spawn点重生
 
-        if (spawnPoint != null && !event.isBedSpawn()) {
-            event.setRespawnLocation(spawnPoint);
-            plugin.getLogger().info(player.getName() + " 在固定出生点重生: " +
-                String.format("%.1f, %.1f, %.1f", spawnPoint.getX(), spawnPoint.getY(), spawnPoint.getZ()));
-        } else if (event.isBedSpawn()) {
-            plugin.getLogger().info(player.getName() + " 在床重生");
+        if (event.isBedSpawn()) {
+            plugin.getLogger().info(player.getName() + " 在床/重生锚重生（原版机制）");
+        } else if (event.isAnchorSpawn()) {
+            plugin.getLogger().info(player.getName() + " 在重生锚重生（原版机制）");
         } else {
-            // 没有固定出生点，重生到lobby
-            org.bukkit.World lobby = org.bukkit.Bukkit.getWorld("world_lobby");
-            if (lobby != null) {
-                Location lobbySpawn = lobby.getSpawnLocation();
-                event.setRespawnLocation(lobbySpawn);
-                plugin.getLogger().info(player.getName() + " 没有固定出生点，重生到lobby");
-            } else {
-                plugin.getLogger().warning(player.getName() + " lobby世界不存在，使用默认重生点");
-            }
+            plugin.getLogger().info(player.getName() + " 在spawn点重生（原版机制）");
         }
+
+        // 不修改event.setRespawnLocation()，让Minecraft自己处理
     }
 }

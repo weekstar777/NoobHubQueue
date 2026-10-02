@@ -53,6 +53,15 @@ public class PlayCommand implements CommandExecutor {
         Player player = (Player) sender;
         UUID uuid = player.getUniqueId();
 
+        // 检查玩家是否已经在游戏世界
+        World currentWorld = player.getWorld();
+        if ("world".equals(currentWorld.getName()) ||
+            "world_nether".equals(currentWorld.getName()) ||
+            "world_the_end".equals(currentWorld.getName())) {
+            MessageUtil.send(player, "§c你已经在游戏世界了！");
+            return true;
+        }
+
         // 检查是否在队列中
         if (plugin.getQueueManager().isInQueue(uuid)) {
             // 还在队列中，说明还没轮到
@@ -101,7 +110,7 @@ public class PlayCommand implements CommandExecutor {
         boolean isFirstTime = !plugin.getPlayerDataRepository().hasEnteredGame(uuid);
 
         if (isFirstTime) {
-            // 首次进入：异步随机传送并设置固定出生点
+            // 首次进入：异步随机传送并设置为玩家的固定出生点
             plugin.getLogger().info(player.getName() + " 首次进入游戏，异步生成随机出生点");
 
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -109,19 +118,22 @@ public class PlayCommand implements CommandExecutor {
                 Location randomLocation = findSafeRandomLocation(gameWorld);
                 long duration = System.currentTimeMillis() - startTime;
 
-                // 回到主线程传送玩家
+                // 回到主线程传送玩家并设置出生点
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     player.teleport(randomLocation);
 
-                    // 保存为玩家的固定出生点（MySQL）
+                    // 设置为该玩家的固定出生点（Minecraft原版机制）
+                    player.setBedSpawnLocation(randomLocation, true);
+
+                    // 保存到数据库（用于后续逻辑判断）
                     plugin.getPlayerDataRepository().saveSpawnPoint(uuid, randomLocation);
 
-                    plugin.getLogger().info(player.getName() + " 首次进入游戏，传送到随机位置: " +
+                    plugin.getLogger().info(player.getName() + " 首次进入游戏，出生点设置为: " +
                         String.format("%.1f, %.1f, %.1f (耗时: %dms)",
                             randomLocation.getX(), randomLocation.getY(), randomLocation.getZ(), duration));
 
                     MessageUtil.send(player, "§a已到达游戏区域！");
-                    MessageUtil.send(player, "§7这是你的固定出生点，死亡后会在此重生");
+                    MessageUtil.send(player, "§7这是你的出生点，死亡后会在此重生");
                 });
             });
         } else {
