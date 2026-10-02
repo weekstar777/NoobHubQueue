@@ -5,12 +5,14 @@ import com.noobhub.queue.utils.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Random;
@@ -106,11 +108,19 @@ public class PlayCommand implements CommandExecutor {
             return;
         }
 
-        // 检查是否首次进入游戏（从 MySQL 查询）
-        boolean isFirstTime = !plugin.getPlayerDataRepository().hasEnteredGame(uuid);
+        // 从PDC读取上次位置
+        Location lastLocation = getLastLocationFromPDC(player);
 
-        if (isFirstTime) {
-            // 首次进入：异步随机传送并设置为玩家的固定出生点
+        if (lastLocation != null) {
+            // 有上次位置记录（老玩家），传送到上次位置
+            player.teleport(lastLocation);
+            plugin.getLogger().info(player.getName() + " 恢复到上次位置: " +
+                String.format("%.1f, %.1f, %.1f (%s)",
+                    lastLocation.getX(), lastLocation.getY(), lastLocation.getZ(),
+                    lastLocation.getWorld().getName()));
+            MessageUtil.send(player, "§a已到达游戏区域！");
+        } else {
+            // 无上次位置记录（首次进入），异步随机传送
             plugin.getLogger().info(player.getName() + " 首次进入游戏，异步生成随机出生点");
 
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -125,8 +135,8 @@ public class PlayCommand implements CommandExecutor {
                     // 设置为该玩家的固定出生点（Minecraft原版机制）
                     player.setBedSpawnLocation(randomLocation, true);
 
-                    // 保存到数据库（用于后续逻辑判断）
-                    plugin.getPlayerDataRepository().saveSpawnPoint(uuid, randomLocation);
+                    // 保存到PDC作为上次位置
+                    saveLastLocationToPDC(player, randomLocation);
 
                     plugin.getLogger().info(player.getName() + " 首次进入游戏，出生点设置为: " +
                         String.format("%.1f, %.1f, %.1f (耗时: %dms)",
@@ -136,11 +146,6 @@ public class PlayCommand implements CommandExecutor {
                     MessageUtil.send(player, "§7这是你的出生点，死亡后会在此重生");
                 });
             });
-        } else {
-            // 非首次：直接传送到游戏世界，Minecraft 会自动把玩家放到上次退出位置
-            player.teleport(gameWorld.getSpawnLocation()); // 触发世界切换
-            plugin.getLogger().info(player.getName() + " 进入游戏世界，Minecraft 将自动恢复上次位置");
-            MessageUtil.send(player, "§a已到达游戏区域！");
         }
     }
 
@@ -238,5 +243,52 @@ public class PlayCommand implements CommandExecutor {
             || material == Material.WITHER_ROSE
             || material == Material.SWEET_BERRY_BUSH
             || material == Material.POWDER_SNOW;
+    }
+
+    /**
+     * 从PDC读取上次位置
+     */
+    private Location getLastLocationFromPDC(Player player) {
+        NamespacedKey keyX = new NamespacedKey(plugin, "last_world_x");
+        NamespacedKey keyY = new NamespacedKey(plugin, "last_world_y");
+        NamespacedKey keyZ = new NamespacedKey(plugin, "last_world_z");
+        NamespacedKey keyWorld = new NamespacedKey(plugin, "last_world_name");
+        NamespacedKey keyYaw = new NamespacedKey(plugin, "last_world_yaw");
+        NamespacedKey keyPitch = new NamespacedKey(plugin, "last_world_pitch");
+
+        Double x = player.getPersistentDataContainer().get(keyX, PersistentDataType.DOUBLE);
+        Double y = player.getPersistentDataContainer().get(keyY, PersistentDataType.DOUBLE);
+        Double z = player.getPersistentDataContainer().get(keyZ, PersistentDataType.DOUBLE);
+        String worldName = player.getPersistentDataContainer().get(keyWorld, PersistentDataType.STRING);
+        Float yaw = player.getPersistentDataContainer().get(keyYaw, PersistentDataType.FLOAT);
+        Float pitch = player.getPersistentDataContainer().get(keyPitch, PersistentDataType.FLOAT);
+
+        if (x != null && y != null && z != null && worldName != null && yaw != null && pitch != null) {
+            World world = Bukkit.getWorld(worldName);
+            if (world != null) {
+                return new Location(world, x, y, z, yaw, pitch);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 保存位置到PDC
+     */
+    private void saveLastLocationToPDC(Player player, Location location) {
+        NamespacedKey keyX = new NamespacedKey(plugin, "last_world_x");
+        NamespacedKey keyY = new NamespacedKey(plugin, "last_world_y");
+        NamespacedKey keyZ = new NamespacedKey(plugin, "last_world_z");
+        NamespacedKey keyWorld = new NamespacedKey(plugin, "last_world_name");
+        NamespacedKey keyYaw = new NamespacedKey(plugin, "last_world_yaw");
+        NamespacedKey keyPitch = new NamespacedKey(plugin, "last_world_pitch");
+
+        player.getPersistentDataContainer().set(keyX, PersistentDataType.DOUBLE, location.getX());
+        player.getPersistentDataContainer().set(keyY, PersistentDataType.DOUBLE, location.getY());
+        player.getPersistentDataContainer().set(keyZ, PersistentDataType.DOUBLE, location.getZ());
+        player.getPersistentDataContainer().set(keyWorld, PersistentDataType.STRING, location.getWorld().getName());
+        player.getPersistentDataContainer().set(keyYaw, PersistentDataType.FLOAT, location.getYaw());
+        player.getPersistentDataContainer().set(keyPitch, PersistentDataType.FLOAT, location.getPitch());
     }
 }
