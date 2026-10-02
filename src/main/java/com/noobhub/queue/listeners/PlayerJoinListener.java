@@ -2,9 +2,6 @@ package com.noobhub.queue.listeners;
 
 import com.noobhub.queue.NoobHubQueue;
 import com.noobhub.queue.utils.MessageUtil;
-import com.onarandombox.MultiverseCore.MultiverseCore;
-import com.onarandombox.MultiverseCore.api.MVWorldManager;
-import com.onarandombox.MultiverseCore.api.MultiverseWorld;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -14,7 +11,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.plugin.Plugin;
 
 public class PlayerJoinListener implements Listener {
 
@@ -28,20 +24,14 @@ public class PlayerJoinListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
-        // 使用Multiverse API获取spawn点（而不是Bukkit的getSpawnLocation）
-        Plugin mvPlugin = Bukkit.getPluginManager().getPlugin("Multiverse-Core");
-        if (mvPlugin instanceof MultiverseCore) {
-            MultiverseCore mvCore = (MultiverseCore) mvPlugin;
-            MVWorldManager worldManager = mvCore.getMVWorldManager();
-            MultiverseWorld mvWorld = worldManager.getMVWorld("world_lobby");
-
-            if (mvWorld != null) {
-                Location spawnLocation = mvWorld.getSpawnLocation();
-                player.teleport(spawnLocation);
-                player.setGameMode(GameMode.ADVENTURE);
-                plugin.getLogger().info(player.getName() + " 传送到主城spawn (Multiverse): " +
-                    spawnLocation.getX() + ", " + spawnLocation.getY() + ", " + spawnLocation.getZ());
-            }
+        // 强制传送到lobby固定坐标（Multiverse 5.x worlds.yml已配置spawn-location）
+        // 硬编码避免Minecraft level.dat整数坐标限制
+        World lobby = Bukkit.getWorld("world_lobby");
+        if (lobby != null) {
+            Location spawnLocation = new Location(lobby, 0.5, 70.0, 0.5, 0.0f, 90.0f);
+            player.teleport(spawnLocation);
+            player.setGameMode(GameMode.ADVENTURE);
+            plugin.getLogger().info(player.getName() + " 传送到主城spawn: 0.5, 70, 0.5");
         }
 
         plugin.getLogger().info(player.getName() + " 进入服务器");
