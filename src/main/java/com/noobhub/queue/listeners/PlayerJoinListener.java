@@ -3,6 +3,7 @@ package com.noobhub.queue.listeners;
 import com.noobhub.queue.NoobHubQueue;
 import com.noobhub.queue.utils.MessageUtil;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -28,6 +29,7 @@ public class PlayerJoinListener implements Listener {
         if (lobby != null) {
             Location spawnLocation = lobby.getSpawnLocation();
             player.teleport(spawnLocation);
+            player.setGameMode(GameMode.ADVENTURE);
             plugin.getLogger().info(player.getName() + " 传送到主城spawn");
         }
 
