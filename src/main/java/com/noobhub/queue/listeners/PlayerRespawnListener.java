@@ -31,7 +31,15 @@ public class PlayerRespawnListener implements Listener {
         } else if (event.isBedSpawn()) {
             plugin.getLogger().info(player.getName() + " 在床重生");
         } else {
-            plugin.getLogger().info(player.getName() + " 没有固定出生点，使用默认重生点");
+            // 没有固定出生点，重生到lobby
+            org.bukkit.World lobby = org.bukkit.Bukkit.getWorld("world_lobby");
+            if (lobby != null) {
+                Location lobbySpawn = lobby.getSpawnLocation();
+                event.setRespawnLocation(lobbySpawn);
+                plugin.getLogger().info(player.getName() + " 没有固定出生点，重生到lobby");
+            } else {
+                plugin.getLogger().warning(player.getName() + " lobby世界不存在，使用默认重生点");
+            }
         }
     }
 }
