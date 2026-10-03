@@ -252,7 +252,7 @@ public class QueueManager {
      * 前100名玩家虽然在等待大厅，但已占用名额
      * 排队玩家未占用名额，需等待空位
      */
-    private int getGamePlayers() {
+    public int getGamePlayers() {
         return Bukkit.getOnlinePlayers().size() - getQueueSize();
     }
 

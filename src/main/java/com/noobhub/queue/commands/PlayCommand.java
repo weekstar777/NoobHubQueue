@@ -83,7 +83,17 @@ public class PlayCommand implements CommandExecutor {
             return true;
         }
 
-        // 不在队列中（前100名或已被通知），直接传送
+        // 检查游戏世界是否已满
+        int currentPlayers = plugin.getQueueManager().getGamePlayers();
+        int maxPlayers = plugin.getConfigManager().getMaxGamePlayers();
+
+        if (currentPlayers >= maxPlayers) {
+            // 游戏世界已满，加入排队
+            plugin.getQueueManager().addToQueue(player);
+            return true;
+        }
+
+        // 游戏世界未满，直接传送
         enterGame(player);
 
         return true;
