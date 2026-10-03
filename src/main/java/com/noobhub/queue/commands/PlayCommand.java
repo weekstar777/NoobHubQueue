@@ -144,7 +144,6 @@ public class PlayCommand implements CommandExecutor {
                             randomLocation.getX(), randomLocation.getY(), randomLocation.getZ(), duration));
 
                     MessageUtil.send(player, "§a已到达游戏区域！");
-                    MessageUtil.send(player, "§7这是你的出生点，死亡后会在此重生");
                 });
             });
         }
