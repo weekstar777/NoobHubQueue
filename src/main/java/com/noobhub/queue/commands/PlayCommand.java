@@ -132,21 +132,7 @@ public class PlayCommand implements CommandExecutor {
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     player.teleport(randomLocation);
 
-                    // 尝试使用原版API设置出生点
-                    player.setBedSpawnLocation(randomLocation, true);
-
-                    // 验证设置是否成功
-                    Location verifySpawn = player.getBedSpawnLocation();
-                    if (verifySpawn != null) {
-                        plugin.getLogger().info("[原版API成功] " + player.getName() +
-                            " 出生点已确认: " + String.format("%.1f, %.1f, %.1f",
-                                verifySpawn.getX(), verifySpawn.getY(), verifySpawn.getZ()));
-                    } else {
-                        plugin.getLogger().warning("[原版API失败] " + player.getName() +
-                            " setBedSpawnLocation被覆盖，使用PDC备用方案");
-                    }
-
-                    // 无论原版API是否成功，都保存到PDC作为备用（给PlayerRespawnListener用）
+                    // 保存出生点到PDC（用于死亡重生）
                     saveSpawnPointToPDC(player, randomLocation);
 
                     // 保存到PDC作为上次位置
