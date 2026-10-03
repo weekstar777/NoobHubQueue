@@ -19,6 +19,22 @@ public class ConfigManager {
         return config.getInt("settings.check-interval", 20);
     }
 
+    public String getLobbyWorld() {
+        return config.getString("settings.worlds.lobby", "world_lobby");
+    }
+
+    public String getGameWorld() {
+        return config.getString("settings.worlds.game", "world");
+    }
+
+    public String getNetherWorld() {
+        return getGameWorld() + "_nether";
+    }
+
+    public String getEndWorld() {
+        return getGameWorld() + "_the_end";
+    }
+
     public String getMessage(String key) {
         return config.getString("messages." + key, "§cMessage not found: " + key)
             .replace("&", "§");

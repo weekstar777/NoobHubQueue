@@ -1,11 +1,16 @@
 # NoobHubQueue Configuration File
 
 settings:
-  # 游戏区域最大人数
+  # 游戏区域最大人数（可配置）
   max-game-players: 100
 
   # 检查间隔（tick，20 tick = 1秒）
   check-interval: 20
+
+  # 世界名称配置
+  worlds:
+    lobby: "world_lobby"  # 等待大厅世界名
+    game: "world"         # 游戏主世界名（下界和末地自动识别为 world_nether 和 world_the_end）
 
 permissions:
   # VIP权限节点

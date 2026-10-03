@@ -48,7 +48,7 @@ public class PlayerRespawnListener implements Listener {
                     spawnPoint.getX(), spawnPoint.getY(), spawnPoint.getZ()));
         } else {
             // 没有出生点记录（没有/play过），强制重生在lobby
-            org.bukkit.World lobby = Bukkit.getWorld("world_lobby");
+            org.bukkit.World lobby = Bukkit.getWorld(plugin.getConfigManager().getLobbyWorld());
             if (lobby != null) {
                 Location lobbySpawn = new Location(lobby, 0.5, 70.0, 0.5);
                 event.setRespawnLocation(lobbySpawn);

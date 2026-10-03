@@ -57,9 +57,9 @@ public class PlayCommand implements CommandExecutor {
 
         // 检查玩家是否已经在游戏世界
         World currentWorld = player.getWorld();
-        if ("world".equals(currentWorld.getName()) ||
-            "world_nether".equals(currentWorld.getName()) ||
-            "world_the_end".equals(currentWorld.getName())) {
+        if (currentWorld.getName().equals(plugin.getConfigManager().getGameWorld()) ||
+            currentWorld.getName().equals(plugin.getConfigManager().getNetherWorld()) ||
+            currentWorld.getName().equals(plugin.getConfigManager().getEndWorld())) {
             MessageUtil.send(player, "§c你已经在游戏世界了！");
             return true;
         }
@@ -101,9 +101,9 @@ public class PlayCommand implements CommandExecutor {
         MessageUtil.send(player, "§e正在传送中~");
 
         // 获取游戏世界
-        World gameWorld = Bukkit.getWorld("world");
+        World gameWorld = Bukkit.getWorld(plugin.getConfigManager().getGameWorld());
         if (gameWorld == null) {
-            plugin.getLogger().severe("游戏世界 world 不存在！");
+            plugin.getLogger().severe("游戏世界 " + plugin.getConfigManager().getGameWorld() + " 不存在！");
             MessageUtil.send(player, "§c服务器配置错误：游戏世界不存在");
             return;
         }

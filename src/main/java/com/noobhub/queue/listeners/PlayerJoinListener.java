@@ -26,7 +26,7 @@ public class PlayerJoinListener implements Listener {
 
         // 所有玩家登录时都在lobby（level-name=world_lobby + Multiverse first-spawn）
         // 直接传送到lobby固定坐标即可
-        World lobby = Bukkit.getWorld("world_lobby");
+        World lobby = Bukkit.getWorld(plugin.getConfigManager().getLobbyWorld());
         if (lobby != null) {
             Location spawnLocation = new Location(lobby, 0.5, 70.0, 0.5, 0.0f, 90.0f);
             player.teleport(spawnLocation);

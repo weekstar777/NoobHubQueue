@@ -26,9 +26,9 @@ public class PlayerQuitListener implements Listener {
         String worldName = player.getWorld().getName();
 
         // 如果玩家在游戏世界退出，保存位置到PDC
-        if ("world".equals(worldName) ||
-            "world_nether".equals(worldName) ||
-            "world_the_end".equals(worldName)) {
+        if (worldName.equals(plugin.getConfigManager().getGameWorld()) ||
+            worldName.equals(plugin.getConfigManager().getNetherWorld()) ||
+            worldName.equals(plugin.getConfigManager().getEndWorld())) {
 
             Location location = player.getLocation();
             saveLastLocationToPDC(player, location);
