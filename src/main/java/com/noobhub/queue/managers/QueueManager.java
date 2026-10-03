@@ -2,6 +2,7 @@ package com.noobhub.queue.managers;
 
 import com.noobhub.queue.NoobHubQueue;
 import com.noobhub.queue.utils.MessageUtil;
+import fr.xephi.authme.api.v3.AuthMeApi;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
 import net.luckperms.api.LuckPerms;
@@ -17,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class QueueManager {
 
     private final NoobHubQueue plugin;
+    private final AuthMeApi authMeApi;
 
     // VIP通道（优先）
     private final LinkedList<UUID> vipQueue;
@@ -35,6 +37,7 @@ public class QueueManager {
 
     public QueueManager(NoobHubQueue plugin) {
         this.plugin = plugin;
+        this.authMeApi = AuthMeApi.getInstance();
         this.vipQueue = new LinkedList<>();
         this.normalQueue = new LinkedList<>();
         this.joinTime = new ConcurrentHashMap<>();
@@ -267,8 +270,8 @@ public class QueueManager {
             // 更新所有排队玩家的显示
             updateQueueDisplay();
 
-            // 安全检查：踢出在游戏世界的排队玩家（兜底防护）
-            checkQueuedPlayersInGameWorld();
+            // 安全检查：踢出在游戏世界的未登录玩家（兜底防护）
+            checkUnauthenticatedPlayersInGameWorld();
 
         }, 0L, interval);
     }
@@ -280,36 +283,22 @@ public class QueueManager {
     }
 
     /**
-     * 检查排队玩家是否在游戏世界
-     * 兜底安全检查，防止通过其他方式绕过排队系统
+     * 检查未登录玩家是否在游戏世界
+     * 兜底安全检查，防止未登录玩家通过其他方式进入游戏世界
      */
-    private void checkQueuedPlayersInGameWorld() {
-        // 检查VIP队列
-        for (UUID uuid : vipQueue) {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null && player.isOnline()) {
+    private void checkUnauthenticatedPlayersInGameWorld() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            // 检查是否已通过AuthMe登录
+            if (!authMeApi.isAuthenticated(player)) {
                 String worldName = player.getWorld().getName();
+
+                // 检查是否在游戏世界
                 if (worldName.equals("world") ||
                     worldName.equals("world_nether") ||
                     worldName.equals("world_the_end")) {
 
-                    player.kickPlayer("§c排队玩家不能在游戏世界！\n\n§7检测到异常行为，已断开连接\n§8请重新登录并等待排队");
-                    plugin.getLogger().severe("[安全] " + player.getName() + " (VIP队列) 出现在游戏世界，已踢出");
-                }
-            }
-        }
-
-        // 检查普通队列
-        for (UUID uuid : normalQueue) {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null && player.isOnline()) {
-                String worldName = player.getWorld().getName();
-                if (worldName.equals("world") ||
-                    worldName.equals("world_nether") ||
-                    worldName.equals("world_the_end")) {
-
-                    player.kickPlayer("§c排队玩家不能在游戏世界！\n\n§7检测到异常行为，已断开连接\n§8请重新登录并等待排队");
-                    plugin.getLogger().severe("[安全] " + player.getName() + " (普通队列) 出现在游戏世界，已踢出");
+                    player.kickPlayer("§c未登录玩家不能在游戏世界！\n\n§7请先完成登录验证\n§8检测到异常行为，已断开连接");
+                    plugin.getLogger().severe("[安全] " + player.getName() + " 未登录时出现在游戏世界，已踢出");
                 }
             }
         }
