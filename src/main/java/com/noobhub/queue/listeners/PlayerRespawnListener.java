@@ -41,17 +41,21 @@ public class PlayerRespawnListener implements Listener {
         Location spawnPoint = getSpawnPointFromPDC(player);
 
         if (spawnPoint != null) {
-            // 手动设置重生位置到出生点
+            // 有出生点记录，重生在个人出生点
             event.setRespawnLocation(spawnPoint);
             plugin.getLogger().info(player.getName() + " 在个人出生点重生: " +
                 String.format("%.1f, %.1f, %.1f",
                     spawnPoint.getX(), spawnPoint.getY(), spawnPoint.getZ()));
         } else {
-            // 没有出生点记录，使用世界spawn（首次进入但还未/play的玩家）
-            Location respawnLocation = event.getRespawnLocation();
-            plugin.getLogger().info(player.getName() + " 无出生点记录，在世界spawn重生: " +
-                String.format("%.1f, %.1f, %.1f",
-                    respawnLocation.getX(), respawnLocation.getY(), respawnLocation.getZ()));
+            // 没有出生点记录（没有/play过），强制重生在lobby
+            org.bukkit.World lobby = Bukkit.getWorld("world_lobby");
+            if (lobby != null) {
+                Location lobbySpawn = new Location(lobby, 0.5, 70.0, 0.5);
+                event.setRespawnLocation(lobbySpawn);
+                plugin.getLogger().info(player.getName() + " 无出生点记录，重生在lobby: 0.5, 70.0, 0.5");
+            } else {
+                plugin.getLogger().warning(player.getName() + " lobby世界不存在，使用原版重生机制");
+            }
         }
     }
 
