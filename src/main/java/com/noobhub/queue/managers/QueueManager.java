@@ -32,9 +32,6 @@ public class QueueManager {
     // 记录已经通知过"轮到你了"的玩家，避免重复通知
     private final Set<UUID> notifiedPlayers;
 
-    // 记录刚登录的玩家，给安全检查10秒宽限期
-    private final Map<UUID, Long> recentlyJoined;
-
     private BukkitTask checkTask;
     private LuckPerms luckPerms;
 
@@ -45,7 +42,6 @@ public class QueueManager {
         this.normalQueue = new LinkedList<>();
         this.joinTime = new ConcurrentHashMap<>();
         this.notifiedPlayers = ConcurrentHashMap.newKeySet();
-        this.recentlyJoined = new ConcurrentHashMap<>();
 
         // 尝试获取LuckPerms
         try {
@@ -207,20 +203,6 @@ public class QueueManager {
         notifiedPlayers.remove(uuid);
     }
 
-    /**
-     * 标记玩家为刚登录，给安全检查10秒宽限期
-     */
-    public void markRecentlyJoined(UUID uuid) {
-        recentlyJoined.put(uuid, System.currentTimeMillis());
-    }
-
-    /**
-     * 清除刚登录标记（AuthMe登录成功后调用）
-     */
-    public void clearRecentlyJoined(UUID uuid) {
-        recentlyJoined.remove(uuid);
-    }
-
     private boolean isVIP(Player player) {
         if (luckPerms == null) {
             return player.hasPermission("queue.vip");
@@ -305,19 +287,7 @@ public class QueueManager {
      * 兜底安全检查，防止未登录玩家通过其他方式进入游戏世界
      */
     private void checkUnauthenticatedPlayersInGameWorld() {
-        long now = System.currentTimeMillis();
-
-        // 清理过期的刚登录记录（超过10秒）
-        recentlyJoined.entrySet().removeIf(entry -> now - entry.getValue() > 10000);
-
         for (Player player : Bukkit.getOnlinePlayers()) {
-            UUID uuid = player.getUniqueId();
-
-            // 跳过刚登录的玩家（给10秒宽限期）
-            if (recentlyJoined.containsKey(uuid)) {
-                continue;
-            }
-
             // 检查是否已通过AuthMe登录
             if (!authMeApi.isAuthenticated(player)) {
                 String worldName = player.getWorld().getName();

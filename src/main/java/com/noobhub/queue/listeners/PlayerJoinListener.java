@@ -33,9 +33,6 @@ public class PlayerJoinListener implements Listener {
             plugin.getLogger().info("[自动重生] " + player.getName() + " 在游戏世界以死亡状态登录，已强制重生");
         }
 
-        // 标记为刚登录，给安全检查10秒宽限期
-        plugin.getQueueManager().markRecentlyJoined(player.getUniqueId());
-
         // 所有玩家登录时都在lobby
         World lobby = Bukkit.getWorld(plugin.getConfigManager().getLobbyWorld());
         if (lobby != null) {

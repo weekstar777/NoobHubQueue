@@ -20,9 +20,6 @@ public class AuthMeLoginListener implements Listener {
     public void onAuthMeLogin(LoginEvent event) {
         Player player = event.getPlayer();
 
-        // AuthMe登录成功，清除刚登录标记，开始正常的安全检查
-        plugin.getQueueManager().clearRecentlyJoined(player.getUniqueId());
-
         // AuthMe登录成功后，检查游戏世界人数
         int currentPlayers = plugin.getQueueManager().getGamePlayers();
         int maxPlayers = plugin.getConfigManager().getMaxGamePlayers();
