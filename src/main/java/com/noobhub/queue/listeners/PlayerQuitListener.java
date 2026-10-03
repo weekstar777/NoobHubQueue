@@ -39,8 +39,9 @@ public class PlayerQuitListener implements Listener {
                     location.getX(), location.getY(), location.getZ(), worldName));
         }
 
-        // 清理队列数据
+        // 清理队列数据和占用的名额
         plugin.getQueueManager().removeFromQueue(uuid);
+        plugin.getQueueManager().clearNotification(uuid);
     }
 
     /**

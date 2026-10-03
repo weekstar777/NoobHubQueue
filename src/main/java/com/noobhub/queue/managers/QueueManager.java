@@ -177,6 +177,23 @@ public class QueueManager {
     }
 
     /**
+     * 为玩家预留名额（登录时游戏世界未满）
+     * 玩家占用名额但还未传送，等待输入/play
+     */
+    public synchronized void reserveSlot(Player player) {
+        UUID uuid = player.getUniqueId();
+
+        // 如果已经占用名额，不重复
+        if (notifiedPlayers.contains(uuid)) {
+            return;
+        }
+
+        // 占用名额
+        notifiedPlayers.add(uuid);
+        plugin.getLogger().info(player.getName() + " 登录时占用名额，等待/play传送");
+    }
+
+    /**
      * 清除玩家的通知标记
      */
     public void clearNotification(UUID uuid) {

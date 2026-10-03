@@ -49,7 +49,8 @@ public class PlayerJoinListener implements Listener {
                 // 游戏世界已满，自动加入排队
                 plugin.getQueueManager().addToQueue(player);
             } else {
-                // 游戏世界未满，可以随时进入
+                // 游戏世界未满，占用名额（即使还没/play）
+                plugin.getQueueManager().reserveSlot(player);
                 MessageUtil.send(player, "§7输入 §6/play §7进入游戏");
             }
         }, 20L); // 1秒后执行
