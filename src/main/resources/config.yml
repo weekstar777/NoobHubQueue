@@ -4,15 +4,6 @@ settings:
   # 游戏区域最大人数
   max-game-players: 100
 
-  # 等待平台位置
-  lobby-location:
-    world: world
-    x: 10.5
-    y: 197.0
-    z: -9.5
-    yaw: 0.0
-    pitch: 0.0
-
   # 检查间隔（tick，20 tick = 1秒）
   check-interval: 20
 
