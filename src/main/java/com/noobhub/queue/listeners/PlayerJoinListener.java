@@ -35,14 +35,22 @@ public class PlayerJoinListener implements Listener {
             // 自动重生（和手动重生一样，重生到重生点/床/锚点）
             player.spigot().respawn();
 
-            // 重生后保存位置（正常的重生机制：下次从重生点继续）
-            Location respawnLocation = player.getLocation();
-            saveLastLocationToPDC(player, respawnLocation);
+            // 检查玩家是否有床重生点（个人重生点）
+            Location bedSpawn = player.getBedSpawnLocation();
+            if (bedSpawn != null) {
+                // 有床，保存重生后的位置（玩家选择的重生点）
+                Location respawnLocation = player.getLocation();
+                saveLastLocationToPDC(player, respawnLocation);
 
-            plugin.getLogger().info("[自动重生] " + player.getName() +
-                " 在游戏世界以死亡状态登录，已重生到: " +
-                String.format("%.1f, %.1f, %.1f",
-                    respawnLocation.getX(), respawnLocation.getY(), respawnLocation.getZ()));
+                plugin.getLogger().info("[自动重生] " + player.getName() +
+                    " 重生到床位置: " +
+                    String.format("%.1f, %.1f, %.1f",
+                        respawnLocation.getX(), respawnLocation.getY(), respawnLocation.getZ()));
+            } else {
+                // 没有床，重生到世界出生点（不保存，使用个人出生点/随机位置）
+                plugin.getLogger().info("[自动重生] " + player.getName() +
+                    " 重生到世界出生点（无床，不覆盖游戏位置）");
+            }
         }
 
         // 所有玩家登录时都在lobby
