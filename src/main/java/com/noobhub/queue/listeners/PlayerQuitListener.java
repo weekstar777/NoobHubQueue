@@ -25,17 +25,14 @@ public class PlayerQuitListener implements Listener {
         UUID uuid = player.getUniqueId();
         String worldName = player.getWorld().getName();
 
-        // 检查玩家是否处于死亡状态
-        if (player.isDead()) {
-            // 自动重生玩家（正常的重生机制）
-            player.spigot().respawn();
-            plugin.getLogger().info("[自动重生] " + player.getName() + " 死亡状态退出，已自动重生");
-        } else if (worldName.equals(plugin.getConfigManager().getGameWorld()) ||
-                   worldName.equals(plugin.getConfigManager().getNetherWorld()) ||
-                   worldName.equals(plugin.getConfigManager().getEndWorld())) {
-            // 正常退出且在游戏世界，保存位置
+        // 如果玩家在游戏世界退出，保存位置到PDC
+        if (worldName.equals(plugin.getConfigManager().getGameWorld()) ||
+            worldName.equals(plugin.getConfigManager().getNetherWorld()) ||
+            worldName.equals(plugin.getConfigManager().getEndWorld())) {
+
             Location location = player.getLocation();
             saveLastLocationToPDC(player, location);
+
             plugin.getLogger().info("[位置保存] " + player.getName() +
                 " 在游戏世界退出，已保存位置: " +
                 String.format("%.1f, %.1f, %.1f (%s)",
