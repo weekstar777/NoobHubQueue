@@ -16,21 +16,6 @@ settings:
   # 检查间隔（tick，20 tick = 1秒）
   check-interval: 20
 
-# MySQL 数据库配置
-database:
-  host: "localhost"
-  port: 3306
-  database: "noobhub"
-  username: "root"
-  password: "your_password_here"
-  # HikariCP 连接池配置
-  pool:
-    maximum-pool-size: 10
-    minimum-idle: 2
-    connection-timeout: 30000
-    idle-timeout: 600000
-    max-lifetime: 1800000
-
 permissions:
   # VIP权限节点
   vip: "queue.vip"
