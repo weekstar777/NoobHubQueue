@@ -27,33 +27,19 @@ public class PlayerQuitListener implements Listener {
 
         // 检查玩家是否处于死亡状态
         if (player.isDead()) {
-            // 保存死亡位置（在重生前）
-            Location deathLocation = player.getLocation();
-
-            // 自动重生玩家
+            // 自动重生玩家（正常的重生机制）
             player.spigot().respawn();
-
-            // 保存死亡位置到PDC（作为下次/play的位置）
-            saveLastLocationToPDC(player, deathLocation);
-
-            plugin.getLogger().info("[自动重生] " + player.getName() +
-                " 死亡状态退出，已自动重生并保存位置: " +
+            plugin.getLogger().info("[自动重生] " + player.getName() + " 死亡状态退出，已自动重生");
+        } else if (worldName.equals(plugin.getConfigManager().getGameWorld()) ||
+                   worldName.equals(plugin.getConfigManager().getNetherWorld()) ||
+                   worldName.equals(plugin.getConfigManager().getEndWorld())) {
+            // 正常退出且在游戏世界，保存位置
+            Location location = player.getLocation();
+            saveLastLocationToPDC(player, location);
+            plugin.getLogger().info("[位置保存] " + player.getName() +
+                " 在游戏世界退出，已保存位置: " +
                 String.format("%.1f, %.1f, %.1f (%s)",
-                    deathLocation.getX(), deathLocation.getY(), deathLocation.getZ(), worldName));
-        } else {
-            // 正常退出，如果在游戏世界则保存位置
-            if (worldName.equals(plugin.getConfigManager().getGameWorld()) ||
-                worldName.equals(plugin.getConfigManager().getNetherWorld()) ||
-                worldName.equals(plugin.getConfigManager().getEndWorld())) {
-
-                Location location = player.getLocation();
-                saveLastLocationToPDC(player, location);
-
-                plugin.getLogger().info("[位置保存] " + player.getName() +
-                    " 在游戏世界退出，已保存位置: " +
-                    String.format("%.1f, %.1f, %.1f (%s)",
-                        location.getX(), location.getY(), location.getZ(), worldName));
-            }
+                    location.getX(), location.getY(), location.getZ(), worldName));
         }
 
         // 清理队列数据和占用的名额
