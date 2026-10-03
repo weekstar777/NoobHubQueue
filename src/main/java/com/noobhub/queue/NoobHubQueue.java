@@ -2,6 +2,7 @@ package com.noobhub.queue;
 
 import com.noobhub.queue.commands.PlayCommand;
 import com.noobhub.queue.config.ConfigManager;
+import com.noobhub.queue.listeners.AuthMeLoginListener;
 import com.noobhub.queue.listeners.PlayerJoinListener;
 import com.noobhub.queue.listeners.PlayerQuitListener;
 import com.noobhub.queue.listeners.PlayerRespawnListener;
@@ -29,6 +30,7 @@ public final class NoobHubQueue extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerQuitListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerRespawnListener(this), this);
+        getServer().getPluginManager().registerEvents(new AuthMeLoginListener(this), this);
 
         // 注册指令
         getCommand("play").setExecutor(new PlayCommand(this));

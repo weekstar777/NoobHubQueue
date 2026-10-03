@@ -61,6 +61,15 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/../NoobHub/plugins/multiverse-core-5.8.1.jar</systemPath>
         </dependency>
+
+        <!-- AuthMe API (本地jar) -->
+        <dependency>
+            <groupId>fr.xephi</groupId>
+            <artifactId>authme</artifactId>
+            <version>6.0.1</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../NoobHub/plugins/AuthMe-6.0.1-Paper.jar</systemPath>
+        </dependency>
     </dependencies>
 
     <build>

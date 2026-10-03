@@ -7,6 +7,7 @@ description: Single server queue system
 website: https://github.com/noobhub
 
 softdepend: [LuckPerms, RandomSpawn, Essentials]
+depend: [AuthMe]
 
 commands:
   play:
