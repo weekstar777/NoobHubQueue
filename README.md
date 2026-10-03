@@ -234,6 +234,56 @@ MIT License
 
 欢迎提交 Issue 和 Pull Request！
 
+## 🔧 高级配置
+
+### 双世界方案（可选）
+
+使用两个独立世界实现更好的隔离：
+
+**world_lobby（主城）** + **world（游戏世界）**
+
+#### 快速配置
+
+1. 安装 Multiverse-Core 插件
+2. 创建主城虚空世界：
+   ```
+   /mv create world_lobby normal -g VoidGenerator
+   /mv setspawn
+   ```
+3. 设置世界规则：
+   ```
+   /mv gamerule world_lobby doDaylightCycle false
+   /mv modify set pvp false world_lobby
+   ```
+
+玩家在两个世界间切换时，Minecraft自动管理独立的物品栏和位置数据。
+
+### 生产环境部署
+
+**必要插件**：
+- Multiverse-Core（多世界管理）
+- WorldGuard（区域保护）
+- LuckPerms（可选，VIP功能）
+
+**数据库配置**（可选）：
+```yaml
+database:
+  host: localhost
+  port: 3306
+  database: noobhub
+  username: noobhub
+  password: your_password
+```
+
+**保护主城等待区**：
+```
+/rg define lobby
+/rg flag lobby pvp deny
+/rg flag lobby damage deny
+```
+
+更多详细配置请参考项目 Wiki 或联系服务器管理员。
+
 ## 📮 联系方式
 
 - 服务器：NoobHub 无政府服务器

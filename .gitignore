@@ -10,6 +10,9 @@ buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
 
+# Release artifacts (keep in repo)
+!release/
+
 # IntelliJ IDEA
 .idea/
 *.iml
