@@ -52,14 +52,28 @@ public class QueueManager {
 
     /**
      * 添加玩家到队列
+     * synchronized确保原子性，避免竞态条件
      */
     public synchronized void addToQueue(Player player) {
         UUID uuid = player.getUniqueId();
 
+        // 如果已经在队列中，不重复添加
         if (isInQueue(uuid)) {
             return;
         }
 
+        // 再次检查是否还需要排队（防止竞态条件）
+        int currentPlayers = getGamePlayers();
+        int maxPlayers = plugin.getConfigManager().getMaxGamePlayers();
+
+        if (currentPlayers < maxPlayers) {
+            // 有空位，不需要排队，直接通知可以进入
+            MessageUtil.send(player, "§7输入 §6/play §7进入游戏");
+            plugin.getLogger().info(player.getName() + " 检查后发现有空位，无需排队");
+            return;
+        }
+
+        // 确实需要排队，记录加入时间
         joinTime.put(uuid, System.currentTimeMillis());
 
         if (isVIP(player)) {
@@ -247,19 +261,26 @@ public class QueueManager {
 
     /**
      * 获取当前游戏世界的实际玩家数量
-     * 统计world、world_nether、world_the_end的玩家
+     * 包括：在world/nether/end的玩家 + 被通知等待传送的玩家（已占名额）
      */
     public int getGamePlayers() {
-        int count = 0;
+        // 统计实际在游戏世界的玩家
+        int inWorld = 0;
         for (Player player : Bukkit.getOnlinePlayers()) {
             String worldName = player.getWorld().getName();
             if (worldName.equals("world") ||
                 worldName.equals("world_nether") ||
                 worldName.equals("world_the_end")) {
-                count++;
+                inWorld++;
             }
         }
-        return count;
+
+        // 加上被通知等待传送的玩家（他们已经占用了名额）
+        int notified = notifiedPlayers.size();
+
+        plugin.getLogger().fine("游戏世界人数统计 - 在世界中: " + inWorld + ", 已通知待传送: " + notified + ", 总计: " + (inWorld + notified));
+
+        return inWorld + notified;
     }
 
     private void updateQueueDisplay() {
