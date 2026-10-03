@@ -24,6 +24,13 @@ public class PlayerJoinListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
+        // 检查玩家是否处于死亡状态（修复bug：死亡后退出，下次登录仍死亡）
+        if (player.isDead()) {
+            // 强制重生，防止玩家以死亡状态进入服务器
+            player.spigot().respawn();
+            plugin.getLogger().info(player.getName() + " 登录时处于死亡状态，已强制重生");
+        }
+
         // 所有玩家登录时都在lobby
         World lobby = Bukkit.getWorld(plugin.getConfigManager().getLobbyWorld());
         if (lobby != null) {
