@@ -109,6 +109,35 @@ public class PlayCommand implements CommandExecutor {
             return;
         }
 
+        // 检查是否需要恢复死亡状态
+        NamespacedKey deathKey = new NamespacedKey(plugin, "pending_death");
+        boolean hasPendingDeath = player.getPersistentDataContainer().has(deathKey, PersistentDataType.BYTE);
+
+        if (hasPendingDeath) {
+            // 清除标记
+            player.getPersistentDataContainer().remove(deathKey);
+
+            // 获取死亡位置
+            Location deathLocation = getLastLocationFromPDC(player);
+            if (deathLocation != null) {
+                // 传送到死亡位置
+                player.teleport(deathLocation);
+
+                // 延迟1tick后恢复死亡状态
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (player.isOnline()) {
+                        // 清空背包避免重复掉落物品
+                        player.getInventory().clear();
+                        // 杀死玩家，恢复死亡状态
+                        player.setHealth(0);
+                        plugin.getLogger().info(player.getName() + " 已恢复死亡状态");
+                    }
+                }, 1L);
+                return;
+            }
+            // 如果没有死亡位置，继续正常流程
+        }
+
         // 从PDC读取上次位置
         Location lastLocation = getLastLocationFromPDC(player);
 

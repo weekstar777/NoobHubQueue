@@ -5,12 +5,14 @@ import com.noobhub.queue.utils.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.persistence.PersistentDataType;
 
 public class PlayerJoinListener implements Listener {
 
@@ -26,9 +28,13 @@ public class PlayerJoinListener implements Listener {
 
         // 检查玩家是否处于死亡状态（修复bug：死亡后退出，下次登录仍死亡）
         if (player.isDead()) {
-            // 强制重生，防止玩家以死亡状态进入服务器
+            // 标记为"待恢复死亡状态"，/play时恢复
+            NamespacedKey key = new NamespacedKey(plugin, "pending_death");
+            player.getPersistentDataContainer().set(key, PersistentDataType.BYTE, (byte) 1);
+
+            // 强制重生，让玩家活着在lobby
             player.spigot().respawn();
-            plugin.getLogger().info(player.getName() + " 登录时处于死亡状态，已强制重生");
+            plugin.getLogger().info(player.getName() + " 登录时处于死亡状态，标记为待恢复死亡");
         }
 
         // 所有玩家登录时都在lobby
