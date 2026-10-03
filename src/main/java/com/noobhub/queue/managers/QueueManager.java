@@ -297,7 +297,7 @@ public class QueueManager {
                     worldName.equals("world_nether") ||
                     worldName.equals("world_the_end")) {
 
-                    player.kickPlayer("§c未登录玩家不能在游戏世界！\n\n§7请先完成登录验证\n§8检测到异常行为，已断开连接");
+                    player.kickPlayer("§c检测到玩家数据异常，已断开连接！");
                     plugin.getLogger().severe("[安全] " + player.getName() + " 未登录时出现在游戏世界，已踢出");
                 }
             }
