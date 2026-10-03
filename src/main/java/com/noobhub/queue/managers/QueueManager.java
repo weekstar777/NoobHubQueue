@@ -246,14 +246,20 @@ public class QueueManager {
     }
 
     /**
-     * 获取当前已占用的游戏区名额
-     * 计算方式：在线总人数 - 排队人数
-     *
-     * 前100名玩家虽然在等待大厅，但已占用名额
-     * 排队玩家未占用名额，需等待空位
+     * 获取当前游戏世界的实际玩家数量
+     * 统计world、world_nether、world_the_end的玩家
      */
     public int getGamePlayers() {
-        return Bukkit.getOnlinePlayers().size() - getQueueSize();
+        int count = 0;
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            String worldName = player.getWorld().getName();
+            if (worldName.equals("world") ||
+                worldName.equals("world_nether") ||
+                worldName.equals("world_the_end")) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private void updateQueueDisplay() {

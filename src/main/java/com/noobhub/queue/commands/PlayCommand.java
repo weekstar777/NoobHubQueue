@@ -83,6 +83,13 @@ public class PlayCommand implements CommandExecutor {
             return true;
         }
 
+        // 检查是否已被通知（轮到了，等待传送）
+        if (plugin.getQueueManager().isNotified(uuid)) {
+            // 已经轮到了，直接传送，无需再检查人数
+            enterGame(player);
+            return true;
+        }
+
         // 检查游戏世界是否已满
         int currentPlayers = plugin.getQueueManager().getGamePlayers();
         int maxPlayers = plugin.getConfigManager().getMaxGamePlayers();
