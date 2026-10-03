@@ -25,14 +25,15 @@ public class PlayerQuitListener implements Listener {
         UUID uuid = player.getUniqueId();
         String worldName = player.getWorld().getName();
 
-        // 如果玩家在游戏世界退出，保存位置到PDC
-        if (worldName.equals(plugin.getConfigManager().getGameWorld()) ||
-            worldName.equals(plugin.getConfigManager().getNetherWorld()) ||
-            worldName.equals(plugin.getConfigManager().getEndWorld())) {
-
+        // 死亡状态不保存位置（重生后使用上次正常位置或随机位置）
+        if (player.isDead()) {
+            plugin.getLogger().info("[不保存位置] " + player.getName() + " 死亡状态退出，不保存死亡位置");
+        } else if (worldName.equals(plugin.getConfigManager().getGameWorld()) ||
+                   worldName.equals(plugin.getConfigManager().getNetherWorld()) ||
+                   worldName.equals(plugin.getConfigManager().getEndWorld())) {
+            // 正常退出且在游戏世界，保存位置
             Location location = player.getLocation();
             saveLastLocationToPDC(player, location);
-
             plugin.getLogger().info("[位置保存] " + player.getName() +
                 " 在游戏世界退出，已保存位置: " +
                 String.format("%.1f, %.1f, %.1f (%s)",
