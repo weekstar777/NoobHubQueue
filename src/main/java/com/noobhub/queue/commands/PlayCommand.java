@@ -132,8 +132,22 @@ public class PlayCommand implements CommandExecutor {
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     player.teleport(randomLocation);
 
-                    // 设置为该玩家的固定出生点（Minecraft原版机制）
+                    // 尝试使用原版API设置出生点
                     player.setBedSpawnLocation(randomLocation, true);
+
+                    // 验证设置是否成功
+                    Location verifySpawn = player.getBedSpawnLocation();
+                    if (verifySpawn != null) {
+                        plugin.getLogger().info("[原版API成功] " + player.getName() +
+                            " 出生点已确认: " + String.format("%.1f, %.1f, %.1f",
+                                verifySpawn.getX(), verifySpawn.getY(), verifySpawn.getZ()));
+                    } else {
+                        plugin.getLogger().warning("[原版API失败] " + player.getName() +
+                            " setBedSpawnLocation被覆盖，使用PDC备用方案");
+                    }
+
+                    // 无论原版API是否成功，都保存到PDC作为备用（给PlayerRespawnListener用）
+                    saveSpawnPointToPDC(player, randomLocation);
 
                     // 保存到PDC作为上次位置
                     saveLastLocationToPDC(player, randomLocation);
@@ -290,5 +304,20 @@ public class PlayCommand implements CommandExecutor {
         player.getPersistentDataContainer().set(keyWorld, PersistentDataType.STRING, location.getWorld().getName());
         player.getPersistentDataContainer().set(keyYaw, PersistentDataType.FLOAT, location.getYaw());
         player.getPersistentDataContainer().set(keyPitch, PersistentDataType.FLOAT, location.getPitch());
+    }
+
+    /**
+     * 保存出生点到PDC（用于PlayerRespawnListener）
+     */
+    private void saveSpawnPointToPDC(Player player, Location location) {
+        NamespacedKey keyX = new NamespacedKey(plugin, "spawn_point_x");
+        NamespacedKey keyY = new NamespacedKey(plugin, "spawn_point_y");
+        NamespacedKey keyZ = new NamespacedKey(plugin, "spawn_point_z");
+        NamespacedKey keyWorld = new NamespacedKey(plugin, "spawn_point_world");
+
+        player.getPersistentDataContainer().set(keyX, PersistentDataType.DOUBLE, location.getX());
+        player.getPersistentDataContainer().set(keyY, PersistentDataType.DOUBLE, location.getY());
+        player.getPersistentDataContainer().set(keyZ, PersistentDataType.DOUBLE, location.getZ());
+        player.getPersistentDataContainer().set(keyWorld, PersistentDataType.STRING, location.getWorld().getName());
     }
 }
