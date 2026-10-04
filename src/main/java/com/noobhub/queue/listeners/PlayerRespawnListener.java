@@ -4,6 +4,8 @@ import com.noobhub.queue.NoobHubQueue;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
+import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -41,11 +43,14 @@ public class PlayerRespawnListener implements Listener {
         Location spawnPoint = getSpawnPointFromPDC(player);
 
         if (spawnPoint != null) {
+            // 调整到最高固体顶面（防止地形变化导致从天上掉下来）
+            Location safeSpawnPoint = findHighestSolidSurface(spawnPoint);
+
             // 有出生点记录，重生在个人出生点
-            event.setRespawnLocation(spawnPoint);
+            event.setRespawnLocation(safeSpawnPoint);
             plugin.getLogger().info(player.getName() + " 在个人出生点重生: " +
                 String.format("%.1f, %.1f, %.1f",
-                    spawnPoint.getX(), spawnPoint.getY(), spawnPoint.getZ()));
+                    safeSpawnPoint.getX(), safeSpawnPoint.getY(), safeSpawnPoint.getZ()));
         } else {
             // 没有出生点记录（没有/play过），强制重生在lobby
             org.bukkit.World lobby = Bukkit.getWorld(plugin.getConfigManager().getLobbyWorld());
@@ -81,5 +86,47 @@ public class PlayerRespawnListener implements Listener {
         }
 
         return null;
+    }
+
+    /**
+     * 找到指定位置最高的固体方块顶面
+     * 从世界顶部向下扫描，找到第一个固体方块，并确保上方有足够空间
+     */
+    private Location findHighestSolidSurface(Location location) {
+        World world = location.getWorld();
+        int x = location.getBlockX();
+        int z = location.getBlockZ();
+
+        // 从世界最大高度向下扫描
+        int maxHeight = world.getMaxHeight() - 1;
+        int minHeight = world.getMinHeight();
+
+        for (int y = maxHeight; y >= minHeight; y--) {
+            Block block = world.getBlockAt(x, y, z);
+
+            // 找到固体方块
+            if (block.getType().isSolid()) {
+                // 检查上方两格是否为空气（确保玩家有足够空间）
+                Block above1 = world.getBlockAt(x, y + 1, z);
+                Block above2 = world.getBlockAt(x, y + 2, z);
+
+                if (above1.getType().isAir() && above2.getType().isAir()) {
+                    // 返回固体方块上方的位置（y+1），保留原有的yaw和pitch
+                    Location result = new Location(world, x + 0.5, y + 1, z + 0.5,
+                        location.getYaw(), location.getPitch());
+
+                    if (Math.abs(result.getY() - location.getY()) > 0.1) {
+                        plugin.getLogger().info("[重生位置调整] 原Y=" + String.format("%.1f", location.getY()) +
+                            " → 最高固体顶面Y=" + (y + 1));
+                    }
+
+                    return result;
+                }
+            }
+        }
+
+        // 如果没找到合适位置（极端情况），返回原位置
+        plugin.getLogger().warning("[重生位置调整] 未找到合适的固体顶面，使用原位置");
+        return location;
     }
 }
