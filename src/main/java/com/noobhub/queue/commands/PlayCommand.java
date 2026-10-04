@@ -121,8 +121,18 @@ public class PlayCommand implements CommandExecutor {
                     lastLocation.getWorld().getName()));
             MessageUtil.send(player, "§a已到达游戏区域！");
         } else {
-            // 无上次位置记录（首次进入），异步随机传送
-            plugin.getLogger().info(player.getName() + " 首次进入游戏，异步生成随机出生点");
+            // 没有上次位置，检查个人出生点
+            Location spawnPoint = getSpawnPointFromPDC(player);
+            if (spawnPoint != null) {
+                // 有个人出生点，传送过去
+                player.teleport(spawnPoint);
+                plugin.getLogger().info(player.getName() + " 传送到个人出生点: " +
+                    String.format("%.1f, %.1f, %.1f",
+                        spawnPoint.getX(), spawnPoint.getY(), spawnPoint.getZ()));
+                MessageUtil.send(player, "§a已到达游戏区域！");
+            } else {
+                // 首次进入，异步随机传送
+                plugin.getLogger().info(player.getName() + " 首次进入游戏，异步生成随机出生点");
 
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 long startTime = System.currentTimeMillis();
@@ -146,6 +156,7 @@ public class PlayCommand implements CommandExecutor {
                     MessageUtil.send(player, "§a已到达游戏区域！");
                 });
             });
+            }
         }
     }
 
@@ -305,5 +316,28 @@ public class PlayCommand implements CommandExecutor {
         player.getPersistentDataContainer().set(keyY, PersistentDataType.DOUBLE, location.getY());
         player.getPersistentDataContainer().set(keyZ, PersistentDataType.DOUBLE, location.getZ());
         player.getPersistentDataContainer().set(keyWorld, PersistentDataType.STRING, location.getWorld().getName());
+    }
+
+    private Location getSpawnPointFromPDC(Player player) {
+        NamespacedKey keyX = new NamespacedKey(plugin, "spawn_point_x");
+        NamespacedKey keyY = new NamespacedKey(plugin, "spawn_point_y");
+        NamespacedKey keyZ = new NamespacedKey(plugin, "spawn_point_z");
+        NamespacedKey keyWorld = new NamespacedKey(plugin, "spawn_point_world");
+
+        if (!player.getPersistentDataContainer().has(keyX, PersistentDataType.DOUBLE)) {
+            return null;
+        }
+
+        double x = player.getPersistentDataContainer().get(keyX, PersistentDataType.DOUBLE);
+        double y = player.getPersistentDataContainer().get(keyY, PersistentDataType.DOUBLE);
+        double z = player.getPersistentDataContainer().get(keyZ, PersistentDataType.DOUBLE);
+        String worldName = player.getPersistentDataContainer().get(keyWorld, PersistentDataType.STRING);
+
+        World world = Bukkit.getWorld(worldName);
+        if (world == null) {
+            return null;
+        }
+
+        return new Location(world, x, y, z);
     }
 }
