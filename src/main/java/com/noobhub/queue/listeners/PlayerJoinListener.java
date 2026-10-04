@@ -32,20 +32,17 @@ public class PlayerJoinListener implements Listener {
              worldName.equals(plugin.getConfigManager().getNetherWorld()) ||
              worldName.equals(plugin.getConfigManager().getEndWorld())) && player.isDead()) {
 
-            // 自动重生
+            // 自动重生到个人出生点或重生点
             player.spigot().respawn();
 
-            // 只在有床时保存床位置
-            Location bedSpawn = player.getBedSpawnLocation();
-            if (bedSpawn != null) {
-                Location respawnLocation = player.getLocation();
-                saveLastLocationToPDC(player, respawnLocation);
-                plugin.getLogger().info("[自动重生] " + player.getName() + " 重生到床: " +
-                    String.format("%.1f, %.1f, %.1f",
-                        respawnLocation.getX(), respawnLocation.getY(), respawnLocation.getZ()));
-            } else {
-                plugin.getLogger().info("[自动重生] " + player.getName() + " 重生到个人出生点（不保存）");
-            }
+            // 保存重生后的位置
+            Location respawnLocation = player.getLocation();
+            saveLastLocationToPDC(player, respawnLocation);
+
+            plugin.getLogger().info("[自动重生] " + player.getName() +
+                " 死亡状态登录，已重生并保存位置: " +
+                String.format("%.1f, %.1f, %.1f",
+                    respawnLocation.getX(), respawnLocation.getY(), respawnLocation.getZ()));
         }
 
         // 所有玩家登录时都在lobby
