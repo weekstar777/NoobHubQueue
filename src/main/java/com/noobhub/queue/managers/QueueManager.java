@@ -329,13 +329,15 @@ public class QueueManager {
     }
 
     private void updateQueueDisplay() {
+        int normalQueueSize = normalQueue.size();
+
         // 更新VIP通道玩家
         int vipIndex = 1;
         for (UUID uuid : vipQueue) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && player.isOnline()) {
-                String message = String.format("§6[VIP通道] §7排队: §e%d§7/§e%d",
-                    vipIndex, vipQueue.size());
+                String message = String.format("§6[VIP通道] §7排队: §e%d§7/§e%d §8| §7普通通道: §e%d§7人",
+                    vipIndex, vipQueue.size(), normalQueueSize);
                 player.sendActionBar(Component.text(message));
             }
             vipIndex++;
