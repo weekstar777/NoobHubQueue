@@ -6,7 +6,7 @@ Minecraft Paper 1.21.1 单服排队插件，为 NoobHub 无政府服务器设计
 
 - 游戏人数限制（可配置，默认100人），超出自动排队（FIFO）
 - VIP玩家优先插队
-- `/play` 指令手动进入游戏
+- `/play` 指令进入游戏
 - 兼容 RandomSpawn、EssentialsX
 
 ## 快速开始
