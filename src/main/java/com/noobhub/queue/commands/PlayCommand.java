@@ -142,7 +142,9 @@ public class PlayCommand implements CommandExecutor {
 
                 // 回到主线程传送玩家并设置出生点
                 Bukkit.getScheduler().runTask(plugin, () -> {
-                    player.teleport(randomLocation);
+                    // 传送到固体方块上方（避免卡在方块里）
+                    Location safeLocation = randomLocation.clone().add(0, 1, 0);
+                    player.teleport(safeLocation);
 
                     // 保存出生点到PDC（用于死亡重生）
                     saveSpawnPointToPDC(player, randomLocation);
@@ -192,7 +194,7 @@ public class PlayCommand implements CommandExecutor {
                 continue;
             }
 
-            Location location = new Location(world, x + 0.5, y + 1, z + 0.5);
+            Location location = new Location(world, x + 0.5, y, z + 0.5);
 
             // 3️⃣ 完整的安全检查
             if (isLocationSafe(location)) {
