@@ -162,12 +162,12 @@ public class PlayCommand implements CommandExecutor {
     }
 
     /**
-     * 寻找安全的随机位置（FastRTP范围 + 主城保护圈）
+     * 寻找安全的随机位置
      */
     private Location findSafeRandomLocation(World world) {
         int maxTries = 50;
-        int minRadius = 1000;   // 最小半径（保护主城周围 1000格）
-        int maxRadius = 25000;  // 最大半径（FastRTP默认）
+        int minRadius = 0;       // 最小半径（主城在其他世界，无需保护圈）
+        int maxRadius = 100000;  // 最大半径 10万格
 
         for (int i = 0; i < maxTries; i++) {
             // 在圆形区域内随机选择位置（而不是正方形）
@@ -192,7 +192,7 @@ public class PlayCommand implements CommandExecutor {
                 continue;
             }
 
-            Location location = new Location(world, x + 0.5, y, z + 0.5);
+            Location location = new Location(world, x + 0.5, y + 1, z + 0.5);
 
             // 3️⃣ 完整的安全检查
             if (isLocationSafe(location)) {
