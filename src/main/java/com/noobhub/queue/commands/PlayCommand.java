@@ -147,14 +147,14 @@ public class PlayCommand implements CommandExecutor {
                     player.teleport(safeLocation);
 
                     // 保存出生点到PDC（用于死亡重生）
-                    saveSpawnPointToPDC(player, randomLocation);
+                    saveSpawnPointToPDC(player, safeLocation);
 
                     // 保存到PDC作为上次位置
-                    saveLastLocationToPDC(player, randomLocation);
+                    saveLastLocationToPDC(player, safeLocation);
 
                     plugin.getLogger().info(player.getName() + " 首次进入游戏，出生点设置为: " +
                         String.format("%.1f, %.1f, %.1f (耗时: %dms)",
-                            randomLocation.getX(), randomLocation.getY(), randomLocation.getZ(), duration));
+                            safeLocation.getX(), safeLocation.getY(), safeLocation.getZ(), duration));
 
                     MessageUtil.send(player, "§a已到达游戏区域！");
                 });
@@ -308,61 +308,17 @@ public class PlayCommand implements CommandExecutor {
 
     /**
      * 保存出生点到PDC（用于PlayerRespawnListener）
-     * 自动调整到最高固体顶面
      */
     private void saveSpawnPointToPDC(Player player, Location location) {
-        // 找到最高固体顶面
-        Location safeLocation = findHighestSolidSurface(location);
-
         NamespacedKey keyX = new NamespacedKey(plugin, "spawn_point_x");
         NamespacedKey keyY = new NamespacedKey(plugin, "spawn_point_y");
         NamespacedKey keyZ = new NamespacedKey(plugin, "spawn_point_z");
         NamespacedKey keyWorld = new NamespacedKey(plugin, "spawn_point_world");
 
-        player.getPersistentDataContainer().set(keyX, PersistentDataType.DOUBLE, safeLocation.getX());
-        player.getPersistentDataContainer().set(keyY, PersistentDataType.DOUBLE, safeLocation.getY());
-        player.getPersistentDataContainer().set(keyZ, PersistentDataType.DOUBLE, safeLocation.getZ());
-        player.getPersistentDataContainer().set(keyWorld, PersistentDataType.STRING, safeLocation.getWorld().getName());
-    }
-
-    /**
-     * 找到指定位置最高的固体方块顶面
-     * 从世界顶部向下扫描，找到第一个固体方块，并确保上方有足够空间
-     */
-    private Location findHighestSolidSurface(Location location) {
-        World world = location.getWorld();
-        int x = location.getBlockX();
-        int z = location.getBlockZ();
-
-        // 从世界最大高度向下扫描
-        int maxHeight = world.getMaxHeight() - 1;
-        int minHeight = world.getMinHeight();
-
-        for (int y = maxHeight; y >= minHeight; y--) {
-            Block block = world.getBlockAt(x, y, z);
-
-            // 找到固体方块
-            if (block.getType().isSolid()) {
-                // 检查上方两格是否为空气（确保玩家有足够空间）
-                Block above1 = world.getBlockAt(x, y + 1, z);
-                Block above2 = world.getBlockAt(x, y + 2, z);
-
-                if (above1.getType().isAir() && above2.getType().isAir()) {
-                    // 返回固体方块上方的位置（y+1），保留原有的yaw和pitch
-                    Location result = new Location(world, x + 0.5, y + 1, z + 0.5,
-                        location.getYaw(), location.getPitch());
-
-                    plugin.getLogger().info("[出生点调整] 原Y=" + String.format("%.1f", location.getY()) +
-                        " → 最高固体顶面Y=" + (y + 1));
-
-                    return result;
-                }
-            }
-        }
-
-        // 如果没找到合适位置（极端情况），返回原位置
-        plugin.getLogger().warning("[出生点调整] 未找到合适的固体顶面，使用原位置");
-        return location;
+        player.getPersistentDataContainer().set(keyX, PersistentDataType.DOUBLE, location.getX());
+        player.getPersistentDataContainer().set(keyY, PersistentDataType.DOUBLE, location.getY());
+        player.getPersistentDataContainer().set(keyZ, PersistentDataType.DOUBLE, location.getZ());
+        player.getPersistentDataContainer().set(keyWorld, PersistentDataType.STRING, location.getWorld().getName());
     }
 
     private Location getSpawnPointFromPDC(Player player) {
