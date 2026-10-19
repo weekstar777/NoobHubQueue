@@ -53,7 +53,8 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Multiverse-Core API (本地jar) -->
+        <!-- Multiverse-Core API (本地jar)
+             注意:需要先部署NoobHub服务器,确保jar存在于相对路径 -->
         <dependency>
             <groupId>com.onarandombox</groupId>
             <artifactId>multiverse-core</artifactId>
@@ -62,7 +63,8 @@
             <systemPath>${project.basedir}/../NoobHub/plugins/multiverse-core-5.8.1.jar</systemPath>
         </dependency>
 
-        <!-- AuthMe API (本地jar) -->
+        <!-- AuthMe API (本地jar)
+             注意:需要先部署NoobHub服务器,确保jar存在于相对路径 -->
         <dependency>
             <groupId>fr.xephi</groupId>
             <artifactId>authme</artifactId>

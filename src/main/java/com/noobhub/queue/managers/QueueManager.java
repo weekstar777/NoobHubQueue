@@ -84,7 +84,7 @@ public class QueueManager {
             int vipPosition = vipQueue.indexOf(uuid) + 1;
 
             MessageUtil.send(player, "§6§l[VIP通道] §e你已进入VIP排队 §8| §6位置: §e" + vipPosition + "§6/§e" + vipQueue.size());
-            plugin.getLogger().info("[VIP] " + player.getName() + " 加入VIP通道，位置: " + vipPosition);
+            plugin.getLogger().fine("[VIP] " + player.getName() + " 加入VIP通道，位置: " + vipPosition);
         } else {
             normalQueue.addLast(uuid);
             int normalPosition = normalQueue.indexOf(uuid) + 1;
@@ -94,7 +94,7 @@ public class QueueManager {
             if (vipAhead > 0) {
                 MessageUtil.send(player, "  §8▸ §7VIP通道前方: §e" + vipAhead + " §7人（优先进入）");
             }
-            plugin.getLogger().info("[普通] " + player.getName() + " 加入普通通道，位置: " + normalPosition);
+            plugin.getLogger().fine("[普通] " + player.getName() + " 加入普通通道，位置: " + normalPosition);
         }
 
         // 立即更新所有排队玩家的ActionBar显示
@@ -108,12 +108,12 @@ public class QueueManager {
         boolean removed = false;
 
         if (vipQueue.remove(uuid)) {
-            plugin.getLogger().info("玩家 " + uuid + " 已从VIP通道移除");
+            plugin.getLogger().fine("玩家 " + uuid + " 已从VIP通道移除");
             removed = true;
         }
 
         if (normalQueue.remove(uuid)) {
-            plugin.getLogger().info("玩家 " + uuid + " 已从普通通道移除");
+            plugin.getLogger().fine("玩家 " + uuid + " 已从普通通道移除");
             removed = true;
         }
 
@@ -193,7 +193,7 @@ public class QueueManager {
 
         // 占用名额
         notifiedPlayers.add(uuid);
-        plugin.getLogger().info(player.getName() + " 登录时占用名额，等待/play传送");
+        plugin.getLogger().fine(player.getName() + " 登录时占用名额，等待/play传送");
     }
 
     /**
@@ -264,7 +264,7 @@ public class QueueManager {
 
                 // 标记为已通知（等待传送）
                 notifiedPlayers.add(nextUuid);
-                plugin.getLogger().info((isFromVip ? "[VIP]" : "[普通]") + " " + nextPlayer.getName() + " 轮到了，已占用名额，等待传送");
+                plugin.getLogger().fine((isFromVip ? "[VIP]" : "[普通]") + " " + nextPlayer.getName() + " 轮到了，已占用名额，等待传送");
             }
 
             // 更新所有排队玩家的显示
@@ -290,13 +290,8 @@ public class QueueManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             // 检查是否已通过AuthMe登录
             if (!authMeApi.isAuthenticated(player)) {
-                String worldName = player.getWorld().getName();
-
                 // 检查是否在游戏世界
-                if (worldName.equals("world") ||
-                    worldName.equals("world_nether") ||
-                    worldName.equals("world_the_end")) {
-
+                if (plugin.getConfigManager().isGameWorld(player.getWorld().getName())) {
                     player.kickPlayer("§c检测到玩家数据异常，已断开连接！");
                     plugin.getLogger().severe("[安全] " + player.getName() + " 未登录时出现在游戏世界，已踢出");
                 }
@@ -312,10 +307,7 @@ public class QueueManager {
         // 统计实际在游戏世界的玩家
         int inWorld = 0;
         for (Player player : Bukkit.getOnlinePlayers()) {
-            String worldName = player.getWorld().getName();
-            if (worldName.equals("world") ||
-                worldName.equals("world_nether") ||
-                worldName.equals("world_the_end")) {
+            if (plugin.getConfigManager().isGameWorld(player.getWorld().getName())) {
                 inWorld++;
             }
         }

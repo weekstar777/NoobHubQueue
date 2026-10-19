@@ -71,6 +71,67 @@ lp group vip permission set queue.vip true
 
 或使用原生权限（Paper/Bukkit）。
 
+## 注意事项
+
+### 生产环境配置
+
+**重要**: `config.yml`中的`max-game-players`必须与实际游戏容量匹配
+- 生产环境: 默认100人
+- 测试环境: 可临时改为1-5人
+- **测试完成后务必改回生产值**
+
+### 依赖插件
+
+#### 必需依赖
+- **AuthMe** (6.0.1+): 登录系统,排队功能依赖其登录事件触发
+  - 如无AuthMe,插件将无法启动
+
+#### 可选依赖
+- **LuckPerms** (5.4+): VIP权限管理
+  - 未安装时自动回退到Bukkit原生权限系统
+  - VIP功能仍可通过`permissions.yml`或其他权限插件配置
+  
+- **Multiverse-Core** (5.8.1+): 多世界管理
+  - 不影响排队逻辑,仅用于世界名自动识别
+  - 配置`worlds.game`可自定义游戏世界名称
+  
+- **EssentialsX/RandomSpawn**: 传送相关
+  - 不影响核心功能,仅影响玩家首次进入游戏的出生点
+
+### 兼容性说明
+
+#### Multiverse-Inventories
+如果使用背包分离插件,建议将`world_lobby`和`world/nether/end`配置为同一inventory-group,避免玩家传送后背包丢失。
+
+```yaml
+# plugins/Multiverse-Inventories/groups.yml
+groups:
+  default:
+    worlds:
+      - world_lobby
+      - world
+      - world_nether
+      - world_the_end
+    shares:
+      all: true
+```
+
+#### 其他插件
+- ✅ 与EssentialsX/CMI等传送插件兼容
+- ✅ 与GrimAC/Vulcan等反作弊插件兼容
+- ❌ 不支持BungeeCord跨服排队(本插件为单服设计)
+
+## 常见问题
+
+**Q: 为什么我一直在排队,但前面明明没人?**  
+A: 检查`config.yml`中的`max-game-players`是否配置正确(应为100,不是1)
+
+**Q: VIP权限不生效?**  
+A: 确认LuckPerms已安装并为VIP组设置`queue.vip`权限:`lp group vip permission set queue.vip true`
+
+**Q: 玩家卡在大厅无法进入游戏?**  
+A: 检查AuthMe是否正常工作,排队系统依赖AuthMe的登录完成事件
+
 ## 项目结构
 
 ```

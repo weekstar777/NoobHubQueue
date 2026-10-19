@@ -43,4 +43,18 @@ public class ConfigManager {
     public String getVIPPermission() {
         return config.getString("permissions.vip", "queue.vip");
     }
+
+    /**
+     * 检查指定世界名是否为游戏世界(主世界/下界/末地)
+     * @param worldName 世界名称
+     * @return true=游戏世界, false=大厅或其他世界
+     */
+    public boolean isGameWorld(String worldName) {
+        if (worldName == null) return false;
+
+        String gameWorld = getGameWorld();
+        return worldName.equals(gameWorld) ||
+               worldName.equals(gameWorld + "_nether") ||
+               worldName.equals(gameWorld + "_the_end");
+    }
 }
